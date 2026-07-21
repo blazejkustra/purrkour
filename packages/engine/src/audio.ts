@@ -11,7 +11,48 @@
  * SFX: 1–3 tone blips, fast linear attack (kills clicks) + exponential
  * decay. "Cat-ness" is a downward frequency slide — instantly meow-like.
  * All volumes deliberately low (0.03–0.15).
+ *
+ * Platform-agnostic: the app injects an AudioContext factory (the browser's
+ * AudioContext on web, react-native-audio-api's on mobile). The structural
+ * types below are the tiny slice of the Web Audio API this engine uses.
  */
+
+// module-local declares: both DOM and react-native type sets provide these
+// globals, but the DOM-less engine typecheck does not.
+declare function setInterval(handler: () => void, ms: number): number;
+declare function clearInterval(id: number): void;
+
+interface AudioParamLike {
+  value: number;
+  setValueAtTime(value: number, time: number): unknown;
+  linearRampToValueAtTime(value: number, time: number): unknown;
+  exponentialRampToValueAtTime(value: number, time: number): unknown;
+  setTargetAtTime(value: number, time: number, constant: number): unknown;
+}
+
+interface AudioNodeLike {
+  connect(target: unknown): unknown;
+}
+
+interface OscillatorLike extends AudioNodeLike {
+  type: string;
+  frequency: AudioParamLike;
+  start(time: number): void;
+  stop(time: number): void;
+}
+
+interface GainLike extends AudioNodeLike {
+  gain: AudioParamLike;
+}
+
+export interface AudioContextLike {
+  currentTime: number;
+  state: string;
+  destination: unknown;
+  createOscillator(): OscillatorLike;
+  createGain(): GainLike;
+  resume(): Promise<void>;
+}
 
 const midiHz = (m: number) => 440 * 2 ** ((m - 69) / 12);
 
@@ -31,18 +72,18 @@ const MELODY: (number | null)[] = [
 /** One triangle bass note per bar: C3, A2, G2, C3. */
 const BASS = [48, 45, 43, 48];
 
-export function createAudio() {
-  let ctx: AudioContext | null = null;
-  let master: GainNode | null = null;
-  let musicBus: GainNode | null = null;
+export function createAudio(createContext: () => AudioContextLike) {
+  let ctx: AudioContextLike | null = null;
+  let master: GainLike | null = null;
+  let musicBus: GainLike | null = null;
   let musicOn = false;
   let timer: number | null = null;
   let nextTime = 0;
   let slot = 0;
 
-  function ensure(): AudioContext {
+  function ensure(): AudioContextLike {
     if (!ctx) {
-      ctx = new AudioContext();
+      ctx = createContext();
       master = ctx.createGain();
       master.gain.value = 1;
       master.connect(ctx.destination);
@@ -56,12 +97,12 @@ export function createAudio() {
   interface ToneOpts {
     freq: number;
     dur: number;
-    type?: OscillatorType;
+    type?: string;
     vol?: number;
     when?: number;
     /** Glide to this frequency over the tone's duration (meow-maker). */
     slide?: number;
-    bus?: GainNode | null;
+    bus?: GainLike | null;
   }
 
   function tone({ freq, dur, type = 'sine', vol = 0.08, when, slide, bus }: ToneOpts) {
@@ -115,7 +156,7 @@ export function createAudio() {
     musicBus?.gain.setTargetAtTime(1, ac.currentTime, 0.1);
     nextTime = ac.currentTime + 0.05;
     slot = 0;
-    timer = window.setInterval(tick, 150);
+    timer = setInterval(tick, 150);
     tick();
   }
 
@@ -214,3 +255,7 @@ export function createAudio() {
 }
 
 export type GameAudio = ReturnType<typeof createAudio>;
+
+/** The SFX ids a play session emits — apps route them into GameAudio
+ * (and, on mobile, into haptics). */
+export type SfxId = 'meow' | 'select' | 'match' | 'wrong' | 'win';

@@ -1,13 +1,16 @@
 /**
  * TypeGPU renderer: one instanced, textured, sun-lit mesh pipeline drawn
- * into a single MSAA pass that resolves straight to the canvas. The canvas
- * clears to transparent so the page's candy-gradient CSS backdrop shows
- * through. Batches = (mesh, texture) pairs with a fixed-capacity instance
- * storage array rewritten each frame (piece counts are tiny).
+ * into a single MSAA pass that resolves straight to the swapchain. Batches =
+ * (mesh, texture) pairs with a fixed-capacity instance storage array
+ * rewritten each frame (piece counts are tiny).
+ *
+ * Platform-agnostic: the app owns tgpu.init(), the canvas context and its
+ * configure() call, and hands them in here. On react-native-webgpu the
+ * context carries a present() method — frame() calls it when it exists.
  */
 import tgpu, { d, std, type TgpuRoot } from 'typegpu';
 import { mat4, vec3 } from 'wgpu-matrix';
-import { boxMesh, loadMesh, type MeshData } from './gltf.ts';
+import type { MeshData } from './gltf.ts';
 
 export interface InstanceSpec {
   pos: [number, number, number];
@@ -17,6 +20,23 @@ export interface InstanceSpec {
   tint: [number, number, number];
   /** 0..1 — pulsing white-hot highlight add. */
   glow: number;
+}
+
+/** The css/dp-space size of the drawing surface — pointer/touch coordinates
+ * arrive in this space. On web this is the canvas element itself; on mobile
+ * it's a live object updated from the view's layout. */
+export interface RenderSurface {
+  clientWidth: number;
+  clientHeight: number;
+}
+
+export interface RendererInit {
+  root: TgpuRoot;
+  context: GPUCanvasContext & { present?: () => void };
+  surface: RenderSurface;
+  format: GPUTextureFormat;
+  /** Background clear color; default transparent (web CSS backdrop). */
+  clearColor?: { r: number; g: number; b: number; a: number };
 }
 
 const CameraData = d.struct({
@@ -46,21 +66,16 @@ const DEPTH_FORMAT: GPUTextureFormat = 'depth24plus';
 const packSnorm16 = (v: number) => Math.round(Math.max(-1, Math.min(1, v)) * 32767);
 const packUnorm16 = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 65535);
 
-export type Renderer = Awaited<ReturnType<typeof createRenderer>>;
+export type Renderer = ReturnType<typeof createRenderer>;
 
-export async function createRenderer(canvas: HTMLCanvasElement) {
-  const root: TgpuRoot = await tgpu.init();
+export function createRenderer({ root, context, surface, format, clearColor }: RendererInit) {
   const device = root.device;
-  const context = canvas.getContext('webgpu');
-  if (!context) throw new Error('WebGPU canvas context unavailable');
-  const format = navigator.gpu.getPreferredCanvasFormat();
-  context.configure({ device, format, alphaMode: 'premultiplied' });
+  const clear = clearColor ?? { r: 0, g: 0, b: 0, a: 0 };
 
   const camera = root.createUniform(CameraData);
   const sampler = root.createSampler({
     magFilter: 'linear',
     minFilter: 'linear',
-    mipmapFilter: 'linear',
   });
 
   const batchLayout = tgpu.bindGroupLayout({
@@ -180,35 +195,20 @@ export async function createRenderer(canvas: HTMLCanvasElement) {
     return { vertexBuf, indexBuf, indexCount: mesh.indices.length };
   }
 
-  async function uploadTexture(bitmap: ImageBitmap) {
-    const mips = Math.floor(Math.log2(Math.max(bitmap.width, bitmap.height))) + 1;
-    const tex = root
-      .createTexture({
-        size: [bitmap.width, bitmap.height],
-        format: 'rgba8unorm',
-        mipLevelCount: mips,
-      })
-      .$usage('sampled', 'render');
-    tex.write(bitmap);
-    tex.generateMipmaps();
+  /** A 2x2 all-white texture — pieces are colored by vertex colors + tints.
+   * Built from raw pixel bytes so it works without OffscreenCanvas (mobile). */
+  function whiteTexture() {
+    const tex = root.createTexture({ size: [2, 2], format: 'rgba8unorm' }).$usage('sampled');
+    device.queue.writeTexture(
+      { texture: root.unwrap(tex) },
+      new Uint8Array(16).fill(255),
+      { bytesPerRow: 8, rowsPerImage: 2 },
+      [2, 2],
+    );
     return tex;
   }
 
-  async function loadTexture(url: string) {
-    const blob = await (await fetch(url)).blob();
-    return uploadTexture(await createImageBitmap(blob, { colorSpaceConversion: 'none' }));
-  }
-
-  async function whiteTexture() {
-    const cnv = new OffscreenCanvas(2, 2);
-    const ctx = cnv.getContext('2d');
-    if (!ctx) throw new Error('2d context unavailable');
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, 2, 2);
-    return uploadTexture(await createImageBitmap(cnv));
-  }
-
-  type Texture = Awaited<ReturnType<typeof loadTexture>>;
+  type Texture = ReturnType<typeof whiteTexture>;
 
   const HIDDEN: d.Infer<typeof Instance> = {
     pos: d.vec3f(0, -100, 0),
@@ -260,9 +260,9 @@ export async function createRenderer(canvas: HTMLCanvasElement) {
   let msaaTex: GPUTexture | null = null;
   let depthTex: GPUTexture | null = null;
 
-  function ensureTargets() {
-    const w = canvas.width;
-    const h = canvas.height;
+  /** Match the MSAA/depth targets to the swapchain texture's real size —
+   * robust on both web (canvas.width) and mobile (native surface). */
+  function ensureTargets(w: number, h: number) {
     if (w === targetW && h === targetH && msaaView) return;
     msaaTex?.destroy();
     depthTex?.destroy();
@@ -294,8 +294,8 @@ export async function createRenderer(canvas: HTMLCanvasElement) {
   const target = vec3.fromValues(0, 0, 0.35);
   const eye = vec3.create();
 
-  function updateCamera(time: number) {
-    const aspect = canvas.width / Math.max(1, canvas.height);
+  function updateCamera(time: number, w: number, h: number) {
+    const aspect = w / Math.max(1, h);
     // narrow (portrait) screens dolly the camera straight back until the
     // whole board fits the horizontal FOV
     const fit = Math.max(1, 0.92 / aspect);
@@ -311,10 +311,10 @@ export async function createRenderer(canvas: HTMLCanvasElement) {
     });
   }
 
-  /** Mouse (css px) -> world-space ray/plane hit at height `planeY`. */
+  /** Pointer (css px / dp) -> world-space ray/plane hit at height `planeY`. */
   function pickGround(px: number, py: number, planeY: number): [number, number] | null {
-    const ndcX = (px / canvas.clientWidth) * 2 - 1;
-    const ndcY = 1 - (py / canvas.clientHeight) * 2;
+    const ndcX = (px / surface.clientWidth) * 2 - 1;
+    const ndcY = 1 - (py / surface.clientHeight) * 2;
     const near = vec3.create();
     const far = vec3.create();
     vec3.transformMat4(vec3.fromValues(ndcX, ndcY, 0), invViewProj, near);
@@ -339,10 +339,7 @@ export async function createRenderer(canvas: HTMLCanvasElement) {
     root,
     project,
     addBatch,
-    loadMesh,
-    loadTexture,
     whiteTexture,
-    boxMesh,
     pickGround,
     /** Clear + refill this frame's instances for a batch. */
     instances(name: string): InstanceSpec[] {
@@ -351,8 +348,9 @@ export async function createRenderer(canvas: HTMLCanvasElement) {
       return b.specs;
     },
     frame(time: number) {
-      ensureTargets();
-      updateCamera(time);
+      const swap = context.getCurrentTexture();
+      ensureTargets(swap.width, swap.height);
+      updateCamera(time, swap.width, swap.height);
       for (const b of batches.values()) {
         scratch.length = 0;
         for (const spec of b.specs.slice(0, b.capacity)) {
@@ -372,10 +370,10 @@ export async function createRenderer(canvas: HTMLCanvasElement) {
         colorAttachments: [
           {
             view: msaaView as GPUTextureView,
-            resolveTarget: context.getCurrentTexture().createView(),
+            resolveTarget: swap.createView(),
             loadOp: 'clear',
             storeOp: 'discard',
-            clearValue: { r: 0, g: 0, b: 0, a: 0 },
+            clearValue: clear,
           },
         ],
         depthStencilAttachment: {
@@ -392,6 +390,7 @@ export async function createRenderer(canvas: HTMLCanvasElement) {
       }
       pass.end();
       device.queue.submit([encoder.finish()]);
+      context.present?.();
     },
   };
 }

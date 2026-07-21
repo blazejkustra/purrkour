@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Purrkour",
+    "slug": "purrkour",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#f9efdd",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.blazejkustra.purrkour",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "LSApplicationCategoryType": "public.app-category.games",
+        "NSMicrophoneUsageDescription": "Purrkour never records audio. Its audio engine library includes recording features that require this notice; the game only plays sound."
+      }
+    },
+    "android": {
+      "package": "com.blazejkustra.purrkour",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#f9efdd"
+      }
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 180,
+          "resizeMode": "contain",
+          "backgroundColor": "#f9efdd"
+        }
+      ]
+    ]
+  }
+}

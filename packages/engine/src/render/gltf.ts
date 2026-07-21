@@ -27,11 +27,16 @@ const TYPE_COMPONENTS: Record<string, number> = { SCALAR: 1, VEC2: 2, VEC3: 3, V
 // oxlint-disable-next-line typescript/no-explicit-any
 type Json = any;
 
-export async function loadMesh(url: string): Promise<MeshData> {
-  const json: Json = await (await fetch(url)).json();
+/** Injected fetch — keeps this module free of DOM globals (mobile). */
+type FetchLike = (
+  url: string,
+) => Promise<{ json(): Promise<unknown>; arrayBuffer(): Promise<ArrayBuffer> }>;
+
+export async function loadMesh(url: string, fetchImpl: FetchLike): Promise<MeshData> {
+  const json: Json = await (await fetchImpl(url)).json();
   const binUri: string = json.buffers[0].uri;
   const base = url.slice(0, url.lastIndexOf('/') + 1);
-  const bin = await (await fetch(base + binUri)).arrayBuffer();
+  const bin = await (await fetchImpl(base + binUri)).arrayBuffer();
 
   const accessor = (i: number) => {
     const acc = json.accessors[i];

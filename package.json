@@ -1,23 +1,17 @@
 {
-  "name": "purrkour",
+  "name": "purrkour-monorepo",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -p ./tsconfig.json --noEmit && vite build",
-    "preview": "vite preview",
-    "types": "tsc -p ./tsconfig.json --noEmit",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs"
-  },
-  "dependencies": {
-    "typegpu": "^0.11.9",
-    "wgpu-matrix": "^3.4.0"
+    "types": "pnpm -r run types",
+    "test": "pnpm -r --if-present run test",
+    "web": "pnpm --filter @purrkour/web dev",
+    "ios": "pnpm --filter @purrkour/mobile ios",
+    "android": "pnpm --filter @purrkour/mobile android"
   },
   "devDependencies": {
-    "@webgpu/types": "^0.1.71",
-    "typescript": "npm:tsover@6.0.2",
-    "unplugin-typegpu": "^0.11.6",
-    "vite": "^8.1.3"
-  }
+    "typescript": "npm:tsover@6.0.2"
+  },
+  "packageManager": "pnpm@11.13.0"
 }

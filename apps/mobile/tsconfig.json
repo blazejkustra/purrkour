@@ -1,0 +1,24 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["ESNext"],
+    "types": ["@webgpu/types"],
+
+    "skipLibCheck": true,
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    "strict": true,
+    "noImplicitReturns": true,
+    "esModuleInterop": true,
+
+    "allowJs": true
+  },
+  "include": ["App.tsx", "index.ts", "components/**/*", "src/**/*"],
+  "exclude": ["node_modules"]
+}

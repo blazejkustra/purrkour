@@ -3,15 +3,14 @@
     "target": "ESNext",
     "module": "ESNext",
     "skipLibCheck": true,
+
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
     "moduleDetection": "force",
     "noEmit": true,
+
     "strict": true,
-    "noImplicitReturns": true,
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "types": ["@webgpu/types", "vite/client"]
-  },
-  "include": ["src"]
+    "noImplicitReturns": true
+  }
 }
