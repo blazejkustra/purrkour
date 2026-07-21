@@ -97,8 +97,74 @@ interface Drag {
   startPy: number;
   wx: number;
   wz: number;
+  /** Recent world positions for release-velocity estimation (fling). */
+  trail: { t: number; x: number; z: number }[];
 }
 let drag: Drag | null = null;
+
+/** World-space velocity over the drag's last ~120ms. */
+function dragVelocity(d: Drag): [number, number] {
+  const trail = d.trail;
+  if (trail.length < 2) return [0, 0];
+  const last = trail[trail.length - 1];
+  let ref = trail[0];
+  for (const s of trail) {
+    if (last.t - s.t <= 0.12) {
+      ref = s;
+      break;
+    }
+  }
+  const dt = last.t - ref.t;
+  if (dt < 0.016) return [0, 0];
+  return [(last.x - ref.x) / dt, (last.z - ref.z) / dt];
+}
+
+/** Forgiving drop resolution: the release doesn't need to hit the target
+ * cell — closeness, drag direction, and fling velocity all vote. Essential
+ * for touch, where precise drops are hard. */
+function resolveDropTarget(d: Drag): Move | undefined {
+  const map = legalTargets();
+  if (map.size === 0) return undefined;
+  let origin: { x: number; z: number };
+  if (d.kind === 'cat') {
+    const cat = state.cats[d.id];
+    origin = { x: cellX(cat.cell), z: cellZ(cat.cell) };
+  } else {
+    const dog = state.dogs[d.id];
+    const [c1] = dogCells(dog);
+    origin = {
+      x: cellX(c1) + (dog.axis === 'h' ? 0.5 : 0),
+      z: cellZ(c1) + (dog.axis === 'v' ? 0.5 : 0),
+    };
+  }
+  const rx = d.wx - origin.x;
+  const rz = d.wz - origin.z;
+  const rLen = Math.hypot(rx, rz);
+  const [vx, vz] = dragVelocity(d);
+  const speed = Math.hypot(vx, vz);
+  let best: Move | undefined;
+  let bestScore = 0;
+  for (const [cell, m] of map) {
+    const tx = cellX(cell) - origin.x;
+    const tz = cellZ(cell) - origin.z;
+    const tLen = Math.hypot(tx, tz) || 1;
+    // (a) released close to the target cell — the strongest signal
+    const near = 1 - Math.hypot(d.wx - cellX(cell), d.wz - cellZ(cell)) / 0.85;
+    // (b) dragged decisively TOWARD it (direction + at least 30% of the way)
+    const dirR = rLen > 0.35 ? (rx * tx + rz * tz) / (rLen * tLen) : -1;
+    const progress = (rx * tx + rz * tz) / (tLen * tLen);
+    const dragScore = dirR > 0.72 && progress > 0.3 ? dirR : -1;
+    // (c) flung toward it at release
+    const dirV = speed > 2.5 ? (vx * tx + vz * tz) / (speed * tLen) : -1;
+    const flingScore = dirV > 0.72 ? dirV : -1;
+    const score = Math.max(near > 0 ? 1 + near : -1, dragScore, flingScore);
+    if (score > bestScore) {
+      bestScore = score;
+      best = m;
+    }
+  }
+  return best;
+}
 
 let levelIndex = 0;
 let state: GameState = createState(LEVELS[0]);
@@ -830,6 +896,8 @@ canvas.addEventListener('pointermove', (ev) => {
     if (hit) {
       drag.wx = Math.max(-2.6, Math.min(2.6, hit[0]));
       drag.wz = Math.max(-2.6, Math.min(2.6, hit[1]));
+      drag.trail.push({ t: performance.now() / 1000, x: drag.wx, z: drag.wz });
+      if (drag.trail.length > 8) drag.trail.shift();
     }
     canvas.style.cursor = 'grabbing';
     return;
@@ -847,7 +915,17 @@ canvas.addEventListener('pointermove', (ev) => {
 function beginDrag(kind: 'cat' | 'dog', id: number, ev: PointerEvent, wx: number, wz: number) {
   const wasSelected = selected?.kind === kind && selected.id === id;
   selected = { kind, id };
-  drag = { kind, id, active: false, wasSelected, startPx: ev.offsetX, startPy: ev.offsetY, wx, wz };
+  drag = {
+    kind,
+    id,
+    active: false,
+    wasSelected,
+    startPx: ev.offsetX,
+    startPy: ev.offsetY,
+    wx,
+    wz,
+    trail: [{ t: performance.now() / 1000, x: wx, z: wz }],
+  };
   canvas.setPointerCapture(ev.pointerId);
   audioGesture();
   if (!wasSelected) {
@@ -900,8 +978,15 @@ canvas.addEventListener('pointerup', (ev) => {
     if (d.wasSelected) selected = null;
     return;
   }
-  const cell = cellFromMouse(ev.offsetX, ev.offsetY);
-  const m = cell !== null ? legalTargets().get(cell) : undefined;
+  // update to the exact release point, then resolve the INTENDED target
+  // (closeness / drag direction / fling all count — no precision required)
+  const hit = renderer.pickGround(ev.offsetX, ev.offsetY, TILE_H);
+  if (hit) {
+    d.wx = Math.max(-2.6, Math.min(2.6, hit[0]));
+    d.wz = Math.max(-2.6, Math.min(2.6, hit[1]));
+    d.trail.push({ t: performance.now() / 1000, x: d.wx, z: d.wz });
+  }
+  const m = resolveDropTarget(d);
   if (m && m.kind === d.kind && m.id === d.id) {
     // drop into place from where the piece hovers right now
     const from =
@@ -910,7 +995,7 @@ canvas.addEventListener('pointerup', (ev) => {
         : dragDogCenter(state.dogs[d.id], d);
     startMove(m, performance.now() / 1000, from);
   }
-  // invalid drop: the piece simply snaps home and stays selected
+  // no confident target: the piece simply snaps home and stays selected
 });
 canvas.addEventListener('pointercancel', () => {
   drag = null;
