@@ -11,9 +11,11 @@
     "prebuild": "expo prebuild"
   },
   "dependencies": {
+    "@expo-google-fonts/baloo-2": "^0.4.2",
     "@petamoriken/float16": "^3.9.3",
     "@purrkour/engine": "workspace:*",
     "expo": "^57.0.6",
+    "expo-font": "~57.0.0",
     "expo-keep-awake": "~57.0.1",
     "expo-splash-screen": "~57.0.4",
     "expo-system-ui": "~57.0.1",

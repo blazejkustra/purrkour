@@ -1,12 +1,17 @@
-/** The full-screen cards: menu, tutorial, level intro, win — RN ports of
- * the web app's DOM screens, fed by the shared engine content/progress. */
+/** Menu title screen + the modal cards (tutorial, level intro, win) — fed by
+ * the shared engine content/progress. The menu is a full-screen layout over
+ * the live 3D room: title block up top, a paper level sheet docked below. */
 import React from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
+import { Image, ScrollView, StyleSheet, View } from 'react-native';
+import Animated, { Easing, FadeIn, FadeInDown, FadeOut, SlideInDown } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LEVELS } from '@purrkour/engine/game/levels.ts';
 import { TIER_STARS, tierOf, type Progress } from '@purrkour/engine/game/progress.ts';
 import { TUTORIAL_PAGES } from '@purrkour/engine/game/tutorial.ts';
-import { colors } from '../src/theme.ts';
+import { colors, radius } from '../src/theme.ts';
+import { tapHaptic } from '../src/sound.ts';
+import { BouncyPressable } from './BouncyPressable.tsx';
+import { PText } from './PText.tsx';
 import { Btn, CardScreen } from './ui.tsx';
 
 const logo = require('../assets/splash-icon.png');
@@ -22,56 +27,87 @@ export function MenuScreen({
   onHowTo: () => void;
   onLevel: (i: number) => void;
 }) {
+  const insets = useSafeAreaInsets();
   return (
-    <CardScreen>
-      <Image source={logo} style={styles.logo} />
-      <Text style={styles.title}>PURRKOUR</Text>
-      <Text style={styles.tagline}>
-        Parkour for cats — a cozy puzzle about boxes and the jumps in between.
-      </Text>
-      <Text style={styles.starTotal}>
-        ★ {progress.totalStars()} / {LEVELS.length * 3}
-      </Text>
-      <Btn label="Play" variant="accent" big onPress={onPlay} style={styles.playBtn} />
-      <Btn label="How to play" onPress={onHowTo} />
-      <ScrollView style={styles.gridScroll} contentContainerStyle={styles.grid}>
-        {LEVELS.map((level, i) => {
-          const tier = tierOf(i);
-          const unlocked = progress.isUnlocked(i);
-          const stars = progress.stars(i);
-          const tierBg =
-            tier === 1 ? colors.tier1Bg : tier === 2 ? colors.tier2Bg : colors.paper;
-          const tierInk =
-            tier === 1 ? colors.tier1Ink : tier === 2 ? colors.tier2Ink : colors.ink;
-          const starInk =
-            tier === 1 ? colors.tier1Star : tier === 2 ? colors.tier2Star : colors.starGold;
-          return (
-            <Pressable
-              key={level.name}
-              disabled={!unlocked}
-              onPress={() => onLevel(i)}
-              style={({ pressed }) => [
-                styles.lvl,
-                { backgroundColor: unlocked ? tierBg : 'rgba(58, 49, 41, 0.06)' },
-                pressed && { transform: [{ translateY: 1 }] },
-              ]}
-            >
-              <Text style={[styles.lvlNum, { color: unlocked ? tierInk : 'rgba(58,49,41,0.32)' }]}>
-                {i + 1}
-              </Text>
-              <Text
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      {/* warm scrim: keeps the room a soft backdrop, not the main attraction */}
+      <Animated.View
+        entering={FadeIn.duration(300)}
+        style={styles.menuScrim}
+        pointerEvents="none"
+      />
+      <Animated.View
+        entering={FadeIn.duration(300)}
+        style={[styles.menuTop, { paddingTop: insets.top + 18 }]}
+        pointerEvents="box-none"
+      >
+        <Image source={logo} style={styles.logo} />
+        <PText weight="extraBold" style={styles.title}>
+          PURRKOUR
+        </PText>
+        <View style={styles.starChip}>
+          <PText weight="extraBold" style={styles.starChipText}>
+            ★ {progress.totalStars()} / {LEVELS.length * 3}
+          </PText>
+        </View>
+        <Btn label="Play" variant="accent" big onPress={onPlay} style={styles.playBtn} />
+        <Btn label="How to play" small onPress={onHowTo} />
+      </Animated.View>
+
+      <Animated.View
+        entering={SlideInDown.duration(320).easing(Easing.out(Easing.cubic))}
+        style={[styles.sheet, { paddingBottom: insets.bottom + 10 }]}
+      >
+        <View style={styles.sheetHeader}>
+          <PText weight="extraBold" style={styles.sheetTitle}>
+            Levels
+          </PText>
+        </View>
+        <ScrollView contentContainerStyle={styles.grid}>
+          {LEVELS.map((level, i) => {
+            const tier = tierOf(i);
+            const unlocked = progress.isUnlocked(i);
+            const stars = progress.stars(i);
+            const tierBg =
+              tier === 1 ? colors.tier1Bg : tier === 2 ? colors.tier2Bg : colors.tier0Bg;
+            const tierInk =
+              tier === 1 ? colors.tier1Ink : tier === 2 ? colors.tier2Ink : colors.ink;
+            const starInk =
+              tier === 1 ? colors.tier1Ink : tier === 2 ? colors.tier2Ink : colors.starOnCream;
+            return (
+              <BouncyPressable
+                key={level.name}
+                disabled={!unlocked}
+                scaleTo={0.92}
+                onPress={() => {
+                  tapHaptic();
+                  onLevel(i);
+                }}
                 style={[
-                  styles.lvlStars,
-                  { color: unlocked ? starInk : 'rgba(58,49,41,0.4)' },
+                  styles.lvl,
+                  unlocked
+                    ? { backgroundColor: tierBg }
+                    : { backgroundColor: colors.lockedBg, shadowOpacity: 0 },
                 ]}
               >
-                {unlocked ? (stars > 0 ? '★'.repeat(stars) : ' ') : `${TIER_STARS[tier]}★`}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-    </CardScreen>
+                <PText
+                  weight="extraBold"
+                  style={[styles.lvlNum, { color: unlocked ? tierInk : colors.lockedInk }]}
+                >
+                  {i + 1}
+                </PText>
+                <PText
+                  weight="bold"
+                  style={[styles.lvlStars, { color: unlocked ? starInk : colors.lockedInk }]}
+                >
+                  {unlocked ? (stars > 0 ? '★'.repeat(stars) : ' ') : `${TIER_STARS[tier]}★`}
+                </PText>
+              </BouncyPressable>
+            );
+          })}
+        </ScrollView>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -87,19 +123,27 @@ export function TutorialScreen({
   const p = TUTORIAL_PAGES[page];
   return (
     <CardScreen>
-      <Text style={styles.tutTitle}>{p.title}</Text>
-      <Text style={styles.tutBody}>{p.body}</Text>
+      <PText weight="extraBold" style={styles.kicker}>
+        HOW TO PLAY
+      </PText>
+      <PText weight="extraBold" style={styles.cardTitle}>
+        {p.title}
+      </PText>
+      <PText weight="medium" style={styles.cardBody}>
+        {p.body}
+      </PText>
       <View style={styles.dots}>
         {TUTORIAL_PAGES.map((_, i) => (
           <View key={i} style={[styles.dot, i === page && styles.dotOn]} />
         ))}
       </View>
       <View style={styles.cardButtons}>
-        {page > 0 && <Btn label="Back" onPress={onBack} />}
+        {page > 0 && <Btn label="Back" onPress={onBack} style={styles.btnFlex} />}
         <Btn
           label={page === TUTORIAL_PAGES.length - 1 ? "Let's play" : 'Next'}
           variant="accent"
           onPress={onNext}
+          style={styles.btnFlexWide}
         />
       </View>
     </CardScreen>
@@ -118,17 +162,23 @@ export function IntroScreen({
   const level = LEVELS[levelIndex];
   return (
     <CardScreen>
-      <Text style={styles.kicker}>
+      <PText weight="extraBold" style={styles.kicker}>
         LEVEL {levelIndex + 1} OF {LEVELS.length}
-      </Text>
-      <Text style={styles.introName}>{level.name}</Text>
-      <Text style={styles.tutBody}>{level.intro}</Text>
-      <Text style={styles.introPar}>
-        Purrfect score: {level.par} move{level.par > 1 ? 's' : ''}
-      </Text>
+      </PText>
+      <PText weight="extraBold" style={styles.cardTitle}>
+        {level.name}
+      </PText>
+      <PText weight="medium" style={styles.cardBody}>
+        {level.intro}
+      </PText>
+      <View style={styles.parChip}>
+        <PText weight="bold" style={styles.parChipText}>
+          Purrfect score: {level.par} move{level.par > 1 ? 's' : ''}
+        </PText>
+      </View>
       <View style={styles.cardButtons}>
-        <Btn label="Menu" onPress={onMenu} />
-        <Btn label="Let's go" variant="accent" big onPress={onGo} />
+        <Btn label="Menu" onPress={onMenu} style={styles.btnFlex} />
+        <Btn label="Let's go" variant="accent" onPress={onGo} style={styles.btnFlexWide} />
       </View>
     </CardScreen>
   );
@@ -154,16 +204,22 @@ export function WinScreen({
 }) {
   return (
     <CardScreen>
-      <Text style={styles.winTitle}>{win.title}</Text>
-      <Text style={styles.winStars}>
+      <PText weight="extraBold" style={styles.winTitle}>
+        {win.title}
+      </PText>
+      <PText style={styles.winStars}>
         {'★'.repeat(win.stars)}
         {'☆'.repeat(3 - win.stars)}
-      </Text>
-      <Text style={styles.winDetail}>{win.detail}</Text>
+      </PText>
+      <PText weight="semiBold" style={styles.winDetail}>
+        {win.detail}
+      </PText>
+      {win.hasNext && (
+        <Btn label="Next Level" variant="accent" big onPress={onNext} style={styles.winNext} />
+      )}
       <View style={styles.cardButtons}>
-        <Btn label="Menu" onPress={onMenu} />
-        <Btn label="Retry" onPress={onRetry} />
-        {win.hasNext && <Btn label="Next Level" variant="primary" onPress={onNext} />}
+        <Btn label="Menu" onPress={onMenu} style={styles.btnFlex} />
+        <Btn label="Retry" onPress={onRetry} style={styles.btnFlex} />
       </View>
     </CardScreen>
   );
@@ -177,96 +233,172 @@ export function Toast({ message, bottom }: { message: string; bottom: number }) 
       style={[styles.toast, { bottom }]}
       pointerEvents="none"
     >
-      <Text style={styles.toastText}>{message}</Text>
+      <PText weight="semiBold" style={styles.toastText}>
+        {message}
+      </PText>
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  logo: { width: 96, height: 96, marginBottom: 6 },
-  title: { fontSize: 34, fontWeight: '800', letterSpacing: 7, color: colors.ink },
-  tagline: {
-    marginTop: 8,
-    marginBottom: 14,
-    maxWidth: 320,
-    textAlign: 'center',
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 22,
-    color: colors.inkSoft,
+  // --- menu title screen -------------------------------------------------------
+  menuScrim: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(249, 240, 225, 0.78)',
   },
-  starTotal: {
-    marginBottom: 14,
-    fontSize: 16,
-    fontWeight: '800',
+  menuTop: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  logo: { width: 92, height: 92, marginBottom: 2 },
+  title: {
+    fontSize: 40,
+    letterSpacing: 4,
+    lineHeight: 54,
+    textShadowColor: colors.titleShadow,
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 1,
+  },
+  starChip: {
+    backgroundColor: colors.starChip,
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 20,
+    marginTop: 4,
+    marginBottom: 22,
+    shadowColor: '#33302b',
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  starChipText: {
+    fontSize: 17,
     letterSpacing: 1,
-    color: colors.starGold,
+    lineHeight: 26,
   },
-  playBtn: { marginBottom: 10, alignSelf: 'center' },
-  gridScroll: { marginTop: 18, alignSelf: 'stretch', flexGrow: 0 },
+  playBtn: {
+    minWidth: 224,
+    marginBottom: 12,
+  },
+  sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    maxHeight: '46%',
+    backgroundColor: colors.card,
+    borderTopLeftRadius: radius.card,
+    borderTopRightRadius: radius.card,
+    paddingTop: 14,
+    paddingHorizontal: 18,
+    shadowColor: '#2b2016',
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: -8 },
+    elevation: 14,
+  },
+  sheetHeader: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  sheetTitle: {
+    fontSize: 21,
+    lineHeight: 28,
+  },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 7,
+    gap: 8,
     justifyContent: 'center',
+    paddingBottom: 8,
   },
   lvl: {
     width: '17.5%',
-    borderRadius: 12,
+    borderRadius: 16,
     paddingVertical: 8,
     alignItems: 'center',
     shadowColor: '#33302b',
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.12,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
   },
-  lvlNum: { fontSize: 17, fontWeight: '700' },
-  lvlStars: { fontSize: 11, fontWeight: '800', letterSpacing: 1, minHeight: 14 },
-  tutTitle: { fontSize: 25, fontWeight: '800', letterSpacing: 1, color: colors.ink },
-  tutBody: {
-    marginTop: 14,
+  lvlNum: { fontSize: 20, lineHeight: 27 },
+  lvlStars: { fontSize: 12.5, letterSpacing: 0.5, lineHeight: 17, minHeight: 17 },
+
+  // --- modal cards -------------------------------------------------------------
+  kicker: {
+    fontSize: 14,
+    letterSpacing: 3,
+    color: colors.clay,
+  },
+  cardTitle: {
+    marginTop: 2,
+    fontSize: 30,
+    lineHeight: 40,
+    textAlign: 'center',
+    textShadowColor: colors.titleShadow,
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 1,
+  },
+  cardBody: {
+    marginTop: 10,
     maxWidth: 380,
     textAlign: 'center',
-    fontSize: 16,
-    fontWeight: '500',
-    lineHeight: 25,
+    fontSize: 17,
+    lineHeight: 26,
     color: colors.inkSoft,
   },
-  dots: { flexDirection: 'row', gap: 8, marginTop: 20 },
+  dots: { flexDirection: 'row', gap: 8, marginTop: 22 },
   dot: {
-    width: 9,
-    height: 9,
+    width: 10,
+    height: 10,
     borderRadius: 5,
-    backgroundColor: 'rgba(58, 49, 41, 0.18)',
+    backgroundColor: 'rgba(46, 38, 32, 0.18)',
   },
-  dotOn: { backgroundColor: colors.terracotta },
+  dotOn: { backgroundColor: colors.clay },
   cardButtons: {
-    marginTop: 24,
+    marginTop: 22,
     flexDirection: 'row',
     gap: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
+    alignSelf: 'stretch',
   },
-  kicker: {
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 3,
-    color: colors.terracotta,
+  btnFlex: { flex: 1 },
+  btnFlexWide: { flex: 1.6 },
+  parChip: {
+    marginTop: 14,
+    backgroundColor: colors.paperBtn,
+    borderRadius: 999,
+    paddingVertical: 6,
+    paddingHorizontal: 18,
+    borderWidth: 1,
+    borderColor: colors.btnBorder,
   },
-  introName: { marginTop: 6, fontSize: 30, fontWeight: '800', color: colors.ink },
-  introPar: { marginTop: 14, fontSize: 15, fontWeight: '700', color: colors.ink },
-  winTitle: { fontSize: 30, fontWeight: '800', letterSpacing: 3, color: colors.ink },
-  winStars: { fontSize: 36, marginTop: 8, letterSpacing: 6, color: colors.amber },
-  winDetail: { marginTop: 10, fontSize: 16, fontWeight: '600', color: colors.inkSoft },
+  parChipText: { fontSize: 15, lineHeight: 22 },
+  winTitle: {
+    fontSize: 32,
+    letterSpacing: 2,
+    lineHeight: 44,
+    textAlign: 'center',
+    textShadowColor: colors.titleShadow,
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 1,
+  },
+  winStars: { fontSize: 38, marginTop: 2, letterSpacing: 6, color: colors.amber, lineHeight: 48 },
+  winDetail: { marginTop: 4, fontSize: 17, color: colors.inkSoft, textAlign: 'center' },
+  winNext: { marginTop: 22, alignSelf: 'stretch' },
   toast: {
     position: 'absolute',
     alignSelf: 'center',
     backgroundColor: colors.ink,
     paddingVertical: 11,
-    paddingHorizontal: 20,
-    borderRadius: 16,
+    paddingHorizontal: 22,
+    borderRadius: 20,
     maxWidth: '88%',
     zIndex: 10,
   },
-  toastText: { color: colors.paper, fontWeight: '600', fontSize: 15, textAlign: 'center' },
+  toastText: { color: colors.paper, fontSize: 16, textAlign: 'center' },
 });

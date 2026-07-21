@@ -1,5 +1,12 @@
 // Install native WebGPU eagerly so navigator.gpu exists before tgpu.init().
 import 'react-native-webgpu';
+import {
+  Baloo2_500Medium,
+  Baloo2_600SemiBold,
+  Baloo2_700Bold,
+  Baloo2_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/baloo-2';
 import React, { useEffect, useState } from 'react';
 import { StatusBar, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -9,6 +16,12 @@ import { GameScreen } from './components/GameScreen.tsx';
 import { colors } from './src/theme.ts';
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Baloo2_500Medium,
+    Baloo2_600SemiBold,
+    Baloo2_700Bold,
+    Baloo2_800ExtraBold,
+  });
   const [root, setRoot] = useState<TgpuRoot | null>(null);
   const [initError, setInitError] = useState<string | null>(null);
   useEffect(() => {
@@ -41,7 +54,7 @@ export default function App() {
       <SafeAreaProvider initialMetrics={initialWindowMetrics}>
         <View style={[styles.fill, { backgroundColor: colors.paper }]}>
           <StatusBar barStyle="dark-content" backgroundColor={colors.paper} />
-          {root && <GameScreen root={root} />}
+          {root && fontsLoaded && <GameScreen root={root} />}
           {initError !== null && (
             <View style={styles.fatal}>
               <Text style={styles.fatalTitle}>WebGPU unavailable</Text>

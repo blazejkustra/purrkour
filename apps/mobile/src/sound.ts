@@ -43,6 +43,17 @@ const HAPTIC: Record<SfxId, () => void> = {
   win: Presets.fanfare,
 };
 
+/** Light tick for every UI button press (quizit-style tactility). */
+export function tapHaptic() {
+  if (hapticsOn) {
+    try {
+      Presets.System.impactLight();
+    } catch {
+      hapticsOn = false;
+    }
+  }
+}
+
 /** Route a session SFX to speaker + motor. */
 export function playSfx(id: SfxId) {
   audio[id]();

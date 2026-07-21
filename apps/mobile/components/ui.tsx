@@ -1,27 +1,24 @@
 import React from 'react';
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type StyleProp,
-  type TextStyle,
-  type ViewStyle,
-} from 'react-native';
+import { StyleSheet, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 import Animated, { Easing, ZoomIn } from 'react-native-reanimated';
-import { colors } from '../src/theme.ts';
+import { colors, radius } from '../src/theme.ts';
+import { tapHaptic } from '../src/sound.ts';
+import { BouncyPressable } from './BouncyPressable.tsx';
+import { PText } from './PText.tsx';
 
-type BtnVariant = 'card' | 'accent' | 'primary';
+type BtnVariant = 'card' | 'accent' | 'primary' | 'dark';
 
 const BTN_BG: Record<BtnVariant, string> = {
-  card: colors.card,
-  accent: colors.terracotta,
+  card: colors.paperBtn,
+  accent: colors.clay,
   primary: colors.teal,
+  dark: colors.walnut,
 };
 const BTN_INK: Record<BtnVariant, string> = {
   card: colors.ink,
   accent: '#fff8f2',
-  primary: '#f0faf6',
+  primary: '#f5ede2',
+  dark: colors.plaqueText,
 };
 
 export function Btn({
@@ -42,18 +39,23 @@ export function Btn({
   textStyle?: StyleProp<TextStyle>;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
+    <BouncyPressable
+      accessibilityRole="button"
+      onPress={() => {
+        tapHaptic();
+        onPress();
+      }}
+      style={[
         styles.btn,
         { backgroundColor: BTN_BG[variant] },
+        variant === 'card' && styles.btnOutlined,
         big && styles.btnBig,
         small && styles.btnSmall,
-        pressed && styles.btnPressed,
         style,
       ]}
     >
-      <Text
+      <PText
+        weight="extraBold"
         style={[
           styles.btnText,
           { color: BTN_INK[variant] },
@@ -63,12 +65,12 @@ export function Btn({
         ]}
       >
         {label}
-      </Text>
-    </Pressable>
+      </PText>
+    </BouncyPressable>
   );
 }
 
-/** The web's .card: warm rounded panel popping in over a dimmed backdrop. */
+/** The web's .card: warm rounded panel appearing over a dimmed backdrop. */
 export function CardScreen({ children }: { children: React.ReactNode }) {
   return (
     <View style={styles.screen} pointerEvents="box-none">
@@ -91,39 +93,43 @@ const styles = StyleSheet.create({
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(58, 45, 33, 0.32)',
+    backgroundColor: 'rgba(46, 36, 26, 0.38)',
     zIndex: 3,
   },
   card: {
     backgroundColor: colors.card,
-    borderRadius: 24,
-    paddingVertical: 28,
+    borderRadius: radius.card,
+    paddingVertical: 30,
     paddingHorizontal: 24,
     alignItems: 'center',
-    width: '90%',
+    width: '92%',
     maxWidth: 560,
     maxHeight: '88%',
-    shadowColor: '#33281e',
+    shadowColor: '#2b2016',
     shadowOpacity: 0.35,
     shadowRadius: 30,
     shadowOffset: { width: 0, height: 14 },
     elevation: 12,
   },
   btn: {
-    borderRadius: 14,
-    paddingVertical: 11,
-    paddingHorizontal: 20,
-    shadowColor: '#33302b',
-    shadowOpacity: 0.16,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 4,
+    borderRadius: radius.btn,
+    paddingVertical: 13,
+    paddingHorizontal: 26,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#33302b',
+    shadowOpacity: 0.2,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 5,
   },
-  btnPressed: { transform: [{ translateY: 1 }], shadowOpacity: 0.1 },
-  btnBig: { paddingVertical: 14, paddingHorizontal: 40, borderRadius: 18 },
-  btnSmall: { paddingVertical: 8, paddingHorizontal: 14 },
-  btnText: { fontSize: 16, fontWeight: '700' },
-  btnTextBig: { fontSize: 19 },
-  btnTextSmall: { fontSize: 14 },
+  btnOutlined: {
+    borderWidth: 1,
+    borderColor: colors.btnBorder,
+  },
+  btnBig: { paddingVertical: 16, paddingHorizontal: 46, borderRadius: 26 },
+  btnSmall: { paddingVertical: 9, paddingHorizontal: 20, borderRadius: 18 },
+  btnText: { fontSize: 18, letterSpacing: 0.3 },
+  btnTextBig: { fontSize: 21, letterSpacing: 0.5 },
+  btnTextSmall: { fontSize: 16 },
 });

@@ -5,7 +5,7 @@
  * itself lives in @purrkour/engine.
  */
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Image, StyleSheet, Text, View } from 'react-native';
+import { AppState, Image, PixelRatio, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Canvas, type CanvasRef } from 'react-native-webgpu';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
@@ -26,6 +26,7 @@ import { storage } from '../src/storage.ts';
 import { audio, playSfx } from '../src/sound.ts';
 import { colors } from '../src/theme.ts';
 import { Hud } from './Hud.tsx';
+import { PText } from './PText.tsx';
 import {
   IntroScreen,
   MenuScreen,
@@ -88,6 +89,8 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
   const foreground = useRef(true);
   // live layout size in dp — the renderer reads it for picking each call
   const surface = useRef({ clientWidth: 1, clientHeight: 1 }).current;
+  // the native canvas whose width/height set the drawing-buffer size (px)
+  const nativeCanvas = useRef<{ width: number; height: number } | null>(null);
 
   const [ui, setUi] = useState<Ui>('loading');
   const [fatal, setFatal] = useState<string | null>(null);
@@ -122,11 +125,23 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
     const { width, height } = event.nativeEvent.layout;
     surface.clientWidth = Math.max(1, width);
     surface.clientHeight = Math.max(1, height);
+    // like web's resize(): drawing buffer = layout dp × device pixel ratio,
+    // else the swapchain stays at 1x and the scene upscales blurry
+    const dpr = PixelRatio.get();
+    if (nativeCanvas.current) {
+      nativeCanvas.current.width = Math.max(1, Math.round(width * dpr));
+      nativeCanvas.current.height = Math.max(1, Math.round(height * dpr));
+    }
     if (booting.current || !canvasRef.current) return;
     booting.current = true;
     try {
       const context = canvasRef.current.getContext('webgpu');
       if (!context) throw new Error('WebGPU canvas context unavailable');
+      const canvas = (context as unknown as { canvas: { width: number; height: number } })
+        .canvas;
+      canvas.width = Math.max(1, Math.round(surface.clientWidth * dpr));
+      canvas.height = Math.max(1, Math.round(surface.clientHeight * dpr));
+      nativeCanvas.current = canvas;
       const format = navigator.gpu.getPreferredCanvasFormat();
       context.configure({ device: root.device, format });
       const renderer = createRenderer({
@@ -354,20 +369,28 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
       )}
 
       {toastMsg !== null && (
-        <Toast message={toastMsg} bottom={86 + insets.bottom} />
+        <Toast message={toastMsg} bottom={106 + insets.bottom} />
       )}
 
       {ui === 'loading' && !fatal && (
         <View style={[styles.overlay, styles.center]}>
           <Image source={logo} style={styles.loadLogo} />
-          <Text style={styles.loadTitle}>PURRKOUR</Text>
-          <Text style={styles.loadNote}>warming up the rug…</Text>
+          <PText weight="extraBold" style={styles.loadTitle}>
+            PURRKOUR
+          </PText>
+          <PText weight="semiBold" style={styles.loadNote}>
+            warming up the rug…
+          </PText>
         </View>
       )}
       {fatal !== null && (
         <View style={[styles.overlay, styles.center]}>
-          <Text style={styles.fatalTitle}>WebGPU unavailable</Text>
-          <Text style={styles.loadNote}>{fatal}</Text>
+          <PText weight="extraBold" style={styles.fatalTitle}>
+            WebGPU unavailable
+          </PText>
+          <PText weight="semiBold" style={styles.loadNote}>
+            {fatal}
+          </PText>
         </View>
       )}
     </View>
@@ -386,25 +409,24 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
   center: { alignItems: 'center', justifyContent: 'center' },
-  loadLogo: { width: 110, height: 110, marginBottom: 12 },
+  loadLogo: { width: 110, height: 110, marginBottom: 8 },
   loadTitle: {
     fontSize: 34,
-    fontWeight: '800',
-    letterSpacing: 7,
-    color: colors.ink,
+    letterSpacing: 5,
+    lineHeight: 46,
+    textShadowColor: colors.titleShadow,
+    textShadowOffset: { width: 0, height: 3 },
+    textShadowRadius: 1,
   },
   loadNote: {
-    marginTop: 12,
+    marginTop: 8,
     fontSize: 15,
-    fontWeight: '600',
     color: colors.inkSoft,
     textAlign: 'center',
     paddingHorizontal: 30,
   },
   fatalTitle: {
     fontSize: 24,
-    fontWeight: '800',
     letterSpacing: 2,
-    color: colors.ink,
   },
 });
