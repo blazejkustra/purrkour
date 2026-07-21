@@ -1,5 +1,5 @@
 /**
- * Cat Jump core rules. Pure logic, no DOM/GPU imports — unit-tested in node.
+ * Purrkour core rules. Pure logic, no DOM/GPU imports — unit-tested in node.
  *
  * Board: 5×5 cells, index = row * 5 + col.
  * - Cats move ONLY by jumping over 1+ contiguous obstacles (any mix of cats,

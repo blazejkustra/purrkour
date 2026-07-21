@@ -1,5 +1,5 @@
 /**
- * Cat Jump — game shell. App flow: loading -> menu -> (tutorial) ->
+ * Purrkour — game shell. App flow: loading -> menu -> (tutorial) ->
  * level intro -> play -> win. Owns input (cell picking, selection,
  * legal-target clicks), move animation, HUD, hints and persistence.
  * Rules live in game/model.ts; drawing in render/renderer.ts.
@@ -199,9 +199,19 @@ function updateHud() {
 
 // --- persistence ---------------------------------------------------------------
 
-const BEST_KEY = 'catjump.best';
-const TUTORIAL_KEY = 'catjump.tutorialSeen';
-const MUSIC_KEY = 'catjump.music';
+const BEST_KEY = 'purrkour.best';
+const TUTORIAL_KEY = 'purrkour.tutorialSeen';
+const MUSIC_KEY = 'purrkour.music';
+
+// one-time migration from the working-title keys — nobody loses their stars
+for (const [oldKey, newKey] of [
+  ['catjump.best', BEST_KEY],
+  ['catjump.tutorialSeen', TUTORIAL_KEY],
+  ['catjump.music', MUSIC_KEY],
+] as const) {
+  const v = localStorage.getItem(oldKey);
+  if (v !== null && localStorage.getItem(newKey) === null) localStorage.setItem(newKey, v);
+}
 
 const audio = createAudio();
 const musicWanted = () => localStorage.getItem(MUSIC_KEY) !== '0';
@@ -214,6 +224,9 @@ function audioGesture() {
   audio.unlock();
   if (musicWanted() && !audio.musicOn) audio.startMusic();
 }
+// music should already be playing in the MENU — autoplay policy just needs
+// one gesture, so the very first click/tap anywhere starts it
+window.addEventListener('pointerdown', audioGesture);
 const loadBest = (): Record<number, number> => {
   try {
     return JSON.parse(localStorage.getItem(BEST_KEY) ?? '{}');
@@ -1069,7 +1082,7 @@ loadLevel(0);
 // QA/debug bridge: lets automation project a cell to viewport coords and
 // inspect live state without scraping pixels.
 Object.assign(window as object, {
-  __catjump: {
+  __purrkour: {
     cellScreen: (cell: Cell, h = 0.3) => renderer.project(cellX(cell), h, cellZ(cell)),
     worldScreen: (x: number, y: number, z: number) => renderer.project(x, y, z),
     state: () => ({

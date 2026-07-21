@@ -1,6 +1,6 @@
-# Cat Jump
+# Purrkour
 
-A single-player sequential-movement puzzle on a 5×5 grid, rendered with
+Parkour for cats: a single-player sequential-movement puzzle on a 5×5 grid, rendered with
 [TypeGPU](https://typegpu.com) (WebGPU). Get every cat into a box —
 "if it fits, I sits."
 
