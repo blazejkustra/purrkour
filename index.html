@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f9efdd" />
+    <title>Cat Jump — a cozy puzzle</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='10' width='24' height='18' rx='4' fill='%23f2544c'/%3E%3Cpath d='M6 12 L11 3 L14 12 Z' fill='%23f2544c'/%3E%3Cpath d='M26 12 L21 3 L18 12 Z' fill='%23f2544c'/%3E%3Ccircle cx='12' cy='19' r='2' fill='%233a3129'/%3E%3Ccircle cx='20' cy='19' r='2' fill='%233a3129'/%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <div class="bg-blob blob-a"></div>
+    <div class="bg-blob blob-b"></div>
+    <div class="bg-blob blob-c"></div>
+    <canvas id="canvas"></canvas>
+
+    <!-- in-game HUD -->
+    <div id="hud" class="hidden">
+      <div id="hud-top">
+        <button id="menu-btn" class="btn btn-small">Menu</button>
+        <div>
+          <div id="level-name"></div>
+          <div id="stats">Moves <span id="moves">0</span> · Par <span id="par">0</span></div>
+        </div>
+      </div>
+      <div id="controls">
+        <button id="undo" class="btn">Undo</button>
+        <button id="reset" class="btn">Reset</button>
+        <button id="hint" class="btn btn-hint">Hint</button>
+      </div>
+    </div>
+
+    <!-- boot loading screen -->
+    <div id="loading" class="screen">
+      <div id="loading-inner">
+        <div class="cat-logo">
+          <span class="ear ear-l"></span><span class="ear ear-r"></span>
+          <span class="eye eye-l"></span><span class="eye eye-r"></span>
+        </div>
+        <div id="loading-title">CAT JUMP</div>
+        <div id="load-track"><div id="load-fill"></div></div>
+        <div id="loading-note">warming up the rug…</div>
+      </div>
+    </div>
+
+    <!-- main menu -->
+    <div id="menu" class="screen hidden">
+      <div class="card" id="menu-card">
+        <div class="cat-logo">
+          <span class="ear ear-l"></span><span class="ear ear-r"></span>
+          <span class="eye eye-l"></span><span class="eye eye-r"></span>
+        </div>
+        <div id="menu-title">CAT JUMP</div>
+        <div id="menu-tag">A cozy puzzle about cats, boxes, and the jumps in between.</div>
+        <div id="star-total"></div>
+        <button id="play-btn" class="btn btn-big btn-hint">Play</button>
+        <button id="howto-btn" class="btn">How to play</button>
+        <div id="level-grid"></div>
+      </div>
+    </div>
+
+    <!-- tutorial / onboarding -->
+    <div id="tutorial" class="screen hidden">
+      <div class="card" id="tutorial-card">
+        <div id="tut-title"></div>
+        <div id="tut-body"></div>
+        <div id="tut-dots"></div>
+        <div class="card-buttons">
+          <button id="tut-back" class="btn">Back</button>
+          <button id="tut-next" class="btn btn-hint">Next</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- pre-level intro card -->
+    <div id="intro" class="screen hidden">
+      <div class="card" id="intro-card">
+        <div id="intro-kicker"></div>
+        <div id="intro-name"></div>
+        <div id="intro-text"></div>
+        <div id="intro-par"></div>
+        <div class="card-buttons">
+          <button id="intro-menu" class="btn">Menu</button>
+          <button id="intro-go" class="btn btn-big btn-hint">Let's go</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="toast" class="hidden"></div>
+    <div id="win" class="hidden">
+      <div id="win-card">
+        <div id="win-title">PURRFECT!</div>
+        <div id="win-stars"></div>
+        <div id="win-detail"></div>
+        <div id="win-buttons">
+          <button id="win-menu" class="btn">Menu</button>
+          <button id="win-retry" class="btn">Retry</button>
+          <button id="win-next" class="btn btn-primary">Next Level</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
