@@ -27,9 +27,12 @@ import { createRenderer, type InstanceSpec } from './render/renderer.ts';
 import {
   cardboardBoxMesh,
   catMesh,
+  particleMesh,
   discMesh,
+  corgiMesh,
   dogMesh,
-  plantMesh,
+  foliageMesh,
+  potMesh,
   tileMesh,
   trayMesh,
   yarnMesh,
@@ -79,7 +82,22 @@ interface Anim {
   move: Move;
   start: number;
   dur: number;
+  /** Drag-drop: animate from this world position instead of the from-cell. */
+  from?: { x: number; y: number; z: number };
 }
+
+/** Live drag of a cat/dog (starts on press, activates past a threshold). */
+interface Drag {
+  kind: 'cat' | 'dog';
+  id: number;
+  active: boolean;
+  wasSelected: boolean;
+  startPx: number;
+  startPy: number;
+  wx: number;
+  wz: number;
+}
+let drag: Drag | null = null;
 
 let levelIndex = 0;
 let state: GameState = createState(LEVELS[0]);
@@ -320,10 +338,139 @@ function legalTargets(): Map<Cell, Move> {
   return map;
 }
 
-function startMove(m: Move, now: number) {
+function startMove(m: Move, now: number, from?: { x: number; y: number; z: number }) {
   selected = null;
   hint = null;
-  anim = { move: m, start: now, dur: m.kind === 'cat' ? 0.42 : 0.28 };
+  const dur = from ? (m.kind === 'cat' ? 0.22 : 0.16) : m.kind === 'cat' ? 0.42 : 0.28;
+  anim = from ? { move: m, start: now, dur, from } : { move: m, start: now, dur };
+  if (m.kind === 'cat' && !from) puffAt(m.from, 5); // take-off kick of dust
+}
+
+// --- particles -----------------------------------------------------------------
+
+interface Particle {
+  x: number;
+  y: number;
+  z: number;
+  vx: number;
+  vy: number;
+  vz: number;
+  life: number;
+  maxLife: number;
+  size: number;
+  color: [number, number, number];
+  spin: number;
+  gravity: number;
+}
+const particles: Particle[] = [];
+const MAX_PARTICLES = 140;
+
+const DUST: [number, number, number] = [0.93, 0.87, 0.76];
+const SPARK_COLORS: [number, number, number][] = [
+  [0.95, 0.45, 0.42],
+  [0.96, 0.75, 0.32],
+  [0.56, 0.75, 0.58],
+  [0.48, 0.65, 0.92],
+  [0.75, 0.58, 0.9],
+];
+
+function spawnBurst(
+  x: number,
+  y: number,
+  z: number,
+  count: number,
+  opts: {
+    colors?: [number, number, number][];
+    speed?: number;
+    up?: number;
+    life?: number;
+    size?: number;
+    gravity?: number;
+  } = {},
+) {
+  const colors = opts.colors ?? [DUST];
+  for (let i = 0; i < count && particles.length < MAX_PARTICLES; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const sp = (opts.speed ?? 0.9) * (0.5 + Math.random() * 0.8);
+    const life = (opts.life ?? 0.45) * (0.7 + Math.random() * 0.6);
+    particles.push({
+      x,
+      y: y + 0.05,
+      z,
+      vx: Math.cos(a) * sp,
+      vy: (opts.up ?? 0.9) * (0.6 + Math.random() * 0.8),
+      vz: Math.sin(a) * sp,
+      life,
+      maxLife: life,
+      size: (opts.size ?? 0.07) * (0.7 + Math.random() * 0.7),
+      color: colors[Math.floor(Math.random() * colors.length)],
+      spin: (Math.random() - 0.5) * 12,
+      gravity: opts.gravity ?? -3.2,
+    });
+  }
+}
+
+const cellTop = (c: Cell) => topY(c);
+const puffAt = (c: Cell, n = 8) => spawnBurst(cellX(c), cellTop(c), cellZ(c), n);
+const confettiAt = (c: Cell) =>
+  spawnBurst(cellX(c), cellTop(c) + 0.35, cellZ(c), 16, {
+    colors: SPARK_COLORS,
+    speed: 1.1,
+    up: 2.2,
+    life: 0.8,
+    size: 0.06,
+    gravity: -4.2,
+  });
+
+function updateParticles(dt: number) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.life -= dt;
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+      continue;
+    }
+    p.vy += p.gravity * dt;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.z += p.vz * dt;
+    if (p.y < 0.02) {
+      p.y = 0.02;
+      p.vy = 0;
+      p.vx *= 0.8;
+      p.vz *= 0.8;
+    }
+  }
+}
+
+/** The two yarn balls on the rug — clickable toys. */
+const YARNS: { x: number; z: number; baseRot: number; s: number; tint: [number, number, number] }[] = [
+  { x: 3.5, z: 0.7, baseRot: 2.2, s: 1, tint: [0.93, 0.7, 0.34] },
+  { x: -3.55, z: 1.0, baseRot: 5.1, s: 0.85, tint: [0.56, 0.66, 0.86] },
+];
+const yarnPoke = [-10, -10];
+
+/** Off-board click on a yarn ball? Returns its index, or -1. */
+function yarnAt(px: number, py: number): number {
+  const hit = renderer.pickGround(px, py, -0.33);
+  if (!hit) return -1;
+  for (const [i, y] of YARNS.entries()) {
+    if (Math.hypot(hit[0] - y.x, hit[1] - y.z) < 0.55 * y.s) return i;
+  }
+  return -1;
+}
+
+function pokeYarn(i: number, now: number) {
+  yarnPoke[i] = now;
+  const y = YARNS[i];
+  spawnBurst(y.x, -0.15, y.z, 9, {
+    colors: [y.tint, [0.98, 0.95, 0.88]],
+    speed: 0.8,
+    up: 1.7,
+    life: 0.5,
+    size: 0.05,
+    gravity: -4,
+  });
 }
 
 const CONFETTI_COLORS = ['#d9714e', '#f0b64e', '#8fb996', '#2b6b5f', '#e8a58c', '#c9a86a'];
@@ -344,9 +491,15 @@ function burstConfetti() {
 
 function finishMove() {
   if (!anim) return;
-  applyMove(state, anim.move);
+  const m = anim.move;
+  applyMove(state, m);
   anim = null;
   updateHud();
+  if (m.kind === 'cat') {
+    const inBox = state.boxes.includes(m.to) && !state.cappedBoxes.includes(m.to);
+    if (inBox) confettiAt(m.to); // a cat found its box!
+    else puffAt(m.to, 9);
+  }
   if (isWon(state)) {
     won = true;
     const moves = state.history.length;
@@ -391,9 +544,14 @@ renderer.addBatch('tileRaised', tileMesh(RAISED_H), white, 16);
 for (const color of ['red', 'blue', 'violet', 'yellow'] as const) {
   renderer.addBatch(`cat_${color}`, catMesh(CAT_BODY[color]), white, 4);
 }
-renderer.addBatch('dog', dogMesh(), white, 4);
-renderer.addBatch('plant', plantMesh(), white, 12);
+renderer.addBatch('dog0', dogMesh(), white, 4); // dachshund
+renderer.addBatch('dog1', corgiMesh(), white, 4); // corgi
+renderer.addBatch('pot', potMesh(), white, 12);
+for (const kind of [0, 1, 2] as const) {
+  renderer.addBatch(`foliage${kind}`, foliageMesh(kind), white, 12);
+}
 renderer.addBatch('crate', cardboardBoxMesh(), white, 8);
+renderer.addBatch('particle', particleMesh(), white, MAX_PARTICLES);
 loadProgress(0.85, 'watering the plants…');
 
 // --- per-frame scene build -----------------------------------------------------
@@ -411,19 +569,22 @@ function animLift(kind: 'cat' | 'dog', id: number, now: number): { x: number; z:
   const m = anim.move;
   if (kind === 'dog') {
     const e = easeOut(t);
-    const fx = cellX(m.from) + (state.dogs[id].axis === 'h' ? 0.5 : 0);
-    const fz = cellZ(m.from) + (state.dogs[id].axis === 'v' ? 0.5 : 0);
+    const fx = anim.from?.x ?? cellX(m.from) + (state.dogs[id].axis === 'h' ? 0.5 : 0);
+    const fz = anim.from?.z ?? cellZ(m.from) + (state.dogs[id].axis === 'v' ? 0.5 : 0);
     const tx = cellX(m.to) + (state.dogs[id].axis === 'h' ? 0.5 : 0);
     const tz = cellZ(m.to) + (state.dogs[id].axis === 'v' ? 0.5 : 0);
     return { x: fx + (tx - fx) * e, z: fz + (tz - fz) * e, y: RAISED_H, squash: 1 };
   }
-  // cat: parabolic hop with squash & stretch
+  // cat: parabolic hop with squash & stretch (short low drop when the move
+  // comes from a drag release)
   const e = t;
-  const x = cellX(m.from) + (cellX(m.to) - cellX(m.from)) * e;
-  const z = cellZ(m.from) + (cellZ(m.to) - cellZ(m.from)) * e;
-  const y0 = topY(m.from);
+  const x0 = anim.from?.x ?? cellX(m.from);
+  const z0 = anim.from?.z ?? cellZ(m.from);
+  const y0 = anim.from?.y ?? topY(m.from);
+  const x = x0 + (cellX(m.to) - x0) * e;
+  const z = z0 + (cellZ(m.to) - z0) * e;
   const y1 = topY(m.to);
-  const arc = 1.05 * Math.sin(Math.PI * Math.min(1, t));
+  const arc = (anim.from ? 0.3 : 1.05) * Math.sin(Math.PI * Math.min(1, t));
   const y = y0 + (y1 - y0) * e + arc;
   const squash = t < 0.12 ? 0.82 : t > 0.9 ? 0.86 : 1.06;
   return { x, z, y, squash };
@@ -439,11 +600,30 @@ function buildScene(now: number) {
   rug.length = 0;
   rug.push({ pos: [0, -0.4, 0], rot: 0.13, scl: [4.35, 1, 4.35], tint: RUG_BORDER, glow: 0 });
   rug.push({ pos: [0, -0.395, 0], rot: 0.13, scl: [3.95, 1, 3.95], tint: RUG_INNER, glow: 0 });
-  // yarn balls lounging on the rug's visible sides
+  // yarn balls lounging on the rug's visible sides — poke them!
   const yarn = renderer.instances('yarn');
   yarn.length = 0;
-  yarn.push({ pos: [3.5, -0.335, 0.7], rot: 2.2, scl: [1, 1, 1], tint: [0.93, 0.7, 0.34], glow: 0 });
-  yarn.push({ pos: [-3.55, -0.335, 1.0], rot: 5.1, scl: [0.85, 0.85, 0.85], tint: [0.56, 0.66, 0.86], glow: 0 });
+  for (const [i, y] of YARNS.entries()) {
+    const t = now - yarnPoke[i];
+    let hop = 0;
+    let spin = 0;
+    let squash = 1;
+    if (t >= 0 && t < 0.65) {
+      const k = t / 0.65;
+      hop = 0.55 * Math.sin(Math.PI * k);
+      // exactly two full turns: easeOut(1) === 1, so the ball lands back on
+      // its resting rotation with no end-of-animation snap
+      spin = easeOut(k) * Math.PI * 4;
+      squash = k < 0.12 ? 0.8 : k > 0.88 ? 0.85 : 1.08;
+    }
+    yarn.push({
+      pos: [y.x, -0.335 + hop, y.z],
+      rot: y.baseRot + spin + 0.05 * Math.sin(now * 0.8 + i * 2),
+      scl: [y.s * (2 - squash) * 0.94, y.s * squash, y.s * (2 - squash) * 0.94],
+      tint: y.tint,
+      glow: 0,
+    });
+  }
   const tiles = renderer.instances('tile');
   tiles.length = 0;
   const raisedTiles = renderer.instances('tileRaised');
@@ -464,10 +644,13 @@ function buildScene(now: number) {
       glow: 0,
     });
     if (targets.has(cell)) {
+      // a landing inside a cardboard box sits ON the box floor (which is
+      // thicker than the pad — at tile height it would be swallowed)
+      const inBox = state.boxes.includes(cell);
       pads.push({
-        pos: [cellX(cell), h, cellZ(cell)],
+        pos: [cellX(cell), h + (inBox ? 0.07 : 0), cellZ(cell)],
         rot: 0,
-        scl: [0.72, 0.05, 0.72],
+        scl: [inBox ? 0.6 : 0.72, 0.05, inBox ? 0.6 : 0.72],
         tint: PAD_GLOW,
         glow: 0.85,
       });
@@ -477,10 +660,11 @@ function buildScene(now: number) {
   if (hint) {
     const hc = hintTargetCell(hint.move);
     const hh = track.has(hc) ? RAISED_H : TILE_H;
+    const inBox = state.boxes.includes(hc);
     pads.push({
-      pos: [cellX(hc), hh + 0.005, cellZ(hc)],
+      pos: [cellX(hc), hh + (inBox ? 0.075 : 0.005), cellZ(hc)],
       rot: 0,
-      scl: [0.8, 0.07, 0.8],
+      scl: [inBox ? 0.66 : 0.8, 0.07, inBox ? 0.66 : 0.8],
       tint: HINT_PINK,
       glow: 0.9,
     });
@@ -489,30 +673,32 @@ function buildScene(now: number) {
   // crates (boxes) + capping plants
   const crates = renderer.instances('crate');
   crates.length = 0;
-  const plants = renderer.instances('plant');
-  plants.length = 0;
+  const pots = renderer.instances('pot');
+  pots.length = 0;
+  for (const kind of [0, 1, 2]) renderer.instances(`foliage${kind}`).length = 0;
+  /** Pot stays put; only the foliage rustles. Same origin, same scale.
+   * The plant variety is picked deterministically from the cell. */
+  const plantAt = (cell: Cell, x: number, y: number, z: number, baseRot: number, s: number) => {
+    pots.push({ pos: [x, y, z], rot: baseRot, scl: [s, s, s], tint: WHITE, glow: 0 });
+    const sway = 0.06 * Math.sin(now * 1.5 + cell * 1.3);
+    renderer.instances(`foliage${cell % 3}`).push({
+      pos: [x, y, z],
+      rot: baseRot + sway,
+      scl: [s, s * (1 + 0.012 * Math.sin(now * 1.9 + cell * 1.3)), s],
+      tint: WHITE,
+      glow: 0,
+    });
+  };
   for (const b of state.boxes) {
     crates.push({ pos: [cellX(b), topY(b), cellZ(b)], rot: 0, scl: [1, 1, 1], tint: WHITE, glow: 0 });
     if (state.cappedBoxes.includes(b)) {
       // the squatter plant sits INSIDE the box opening
-      plants.push({
-        pos: [cellX(b), topY(b) + 0.06, cellZ(b)],
-        rot: 0.6,
-        scl: [0.95, 0.95, 0.95],
-        tint: WHITE,
-        glow: 0,
-      });
+      plantAt(b, cellX(b), topY(b) + 0.06, cellZ(b), 0.6, 0.95);
     }
   }
   // cushions: potted plants
   for (const c of state.cushions) {
-    plants.push({
-      pos: [cellX(c), topY(c), cellZ(c)],
-      rot: (c * 37) % 7,
-      scl: [1.08, 1.08, 1.08],
-      tint: WHITE,
-      glow: 0,
-    });
+    plantAt(c, cellX(c), topY(c), cellZ(c), (c * 37) % 7, 1.08);
   }
 
   // cats
@@ -537,11 +723,23 @@ function buildScene(now: number) {
         tint: WHITE,
         glow: 0,
       });
-    } else {
+    } else if (drag?.active && drag.kind === 'cat' && drag.id === cat.id) {
+      // picked up: hover under the pointer, slightly larger
       list.push({
-        pos: [cellX(cat.cell), topY(cat.cell) + (inBox ? 0.06 : 0) + bob, cellZ(cat.cell)],
+        pos: [drag.wx, 0.6 + 0.03 * Math.sin(now * 5), drag.wz],
         rot: 0,
-        scl: [scl, scl, scl],
+        scl: [0.86, 0.86, 0.86],
+        tint: WHITE,
+        glow: 0.2,
+      });
+    } else {
+      // idle breathing; happy victory hops once every cat is home
+      const breathe = 1 + 0.02 * Math.sin(now * 2.3 + cat.id * 2.1);
+      const hop = won ? 0.1 * Math.abs(Math.sin(now * 4.2 + cat.id * 1.4)) : 0;
+      list.push({
+        pos: [cellX(cat.cell), topY(cat.cell) + (inBox ? 0.06 : 0) + bob + hop, cellZ(cat.cell)],
+        rot: 0,
+        scl: [scl, scl * breathe, scl],
         tint: WHITE,
         glow,
       });
@@ -549,19 +747,40 @@ function buildScene(now: number) {
   }
 
   // dogs
-  const dogs = renderer.instances('dog');
-  dogs.length = 0;
+  renderer.instances('dog0').length = 0;
+  renderer.instances('dog1').length = 0;
   for (const dog of state.dogs) {
+    // alternate breeds: first dog is the dachshund, second the corgi
+    const dogs = renderer.instances(`dog${dog.id % 2}`);
     const a = animLift('dog', dog.id, now);
+    const dragging = drag?.active && drag.kind === 'dog' && drag.id === dog.id;
+    const dc = dragging && drag ? dragDogCenter(dog, drag) : null;
     const [c1] = dogCells(dog);
-    const cx = a ? a.x : cellX(c1) + (dog.axis === 'h' ? 0.5 : 0);
-    const cz = a ? a.z : cellZ(c1) + (dog.axis === 'v' ? 0.5 : 0);
+    const cx = dc ? dc.x : a ? a.x : cellX(c1) + (dog.axis === 'h' ? 0.5 : 0);
+    const cz = dc ? dc.z : a ? a.z : cellZ(c1) + (dog.axis === 'v' ? 0.5 : 0);
+    // slow sleepy breathing
+    const snooze = 1 + 0.018 * Math.sin(now * 1.6 + dog.id * 3.3);
     dogs.push({
-      pos: [cx, RAISED_H, cz],
+      pos: [cx, RAISED_H + (dc ? 0.12 : 0), cz],
       rot: dog.axis === 'h' ? Math.PI / 2 : 0,
-      scl: [0.85, 0.85, 0.85],
+      scl: [0.85, 0.85 * snooze, 0.85],
       tint: WHITE,
-      glow: pieceGlow('dog', dog.id),
+      glow: dc ? 0.2 : pieceGlow('dog', dog.id),
+    });
+  }
+
+  // particles: bursts + the lamp-light motes
+  const bits = renderer.instances('particle');
+  bits.length = 0;
+  for (const p of particles) {
+    const t = p.life / p.maxLife;
+    const s = p.size * (t < 0.7 ? 1 : (1 - t) / 0.3) * (0.6 + 0.4 * t);
+    bits.push({
+      pos: [p.x, p.y, p.z],
+      rot: p.spin * (p.maxLife - p.life),
+      scl: [s, s, s],
+      tint: p.color,
+      glow: 0,
     });
   }
 }
@@ -582,20 +801,43 @@ canvas.addEventListener('pointermove', (ev) => {
     canvas.style.cursor = 'default';
     return;
   }
+  // live drag: follow the pointer once it travels past a small threshold
+  if (drag) {
+    if (!drag.active && Math.hypot(ev.offsetX - drag.startPx, ev.offsetY - drag.startPy) > 7) {
+      drag.active = true;
+    }
+    const hit = renderer.pickGround(ev.offsetX, ev.offsetY, TILE_H);
+    if (hit) {
+      drag.wx = Math.max(-2.6, Math.min(2.6, hit[0]));
+      drag.wz = Math.max(-2.6, Math.min(2.6, hit[1]));
+    }
+    canvas.style.cursor = 'grabbing';
+    return;
+  }
   const cell = cellFromMouse(ev.offsetX, ev.offsetY);
   const interactive =
-    cell !== null &&
-    (legalTargets().has(cell) ||
-      state.cats.some((c) => c.cell === cell) ||
-      state.dogs.some((dg) => dogCells(dg).includes(cell)));
+    cell !== null
+      ? legalTargets().has(cell) ||
+        state.cats.some((c) => c.cell === cell) ||
+        state.dogs.some((dg) => dogCells(dg).includes(cell))
+      : yarnAt(ev.offsetX, ev.offsetY) >= 0;
   canvas.style.cursor = interactive ? 'pointer' : 'default';
 });
+
+function beginDrag(kind: 'cat' | 'dog', id: number, ev: PointerEvent, wx: number, wz: number) {
+  const wasSelected = selected?.kind === kind && selected.id === id;
+  selected = { kind, id };
+  drag = { kind, id, active: false, wasSelected, startPx: ev.offsetX, startPy: ev.offsetY, wx, wz };
+  canvas.setPointerCapture(ev.pointerId);
+}
 
 canvas.addEventListener('pointerdown', (ev) => {
   if (ui !== 'play' || anim || won) return;
   const cell = cellFromMouse(ev.offsetX, ev.offsetY);
   if (cell === null) {
-    selected = null;
+    const yi = yarnAt(ev.offsetX, ev.offsetY);
+    if (yi >= 0) pokeYarn(yi, performance.now() / 1000);
+    else selected = null;
     return;
   }
   const targets = legalTargets();
@@ -606,16 +848,56 @@ canvas.addEventListener('pointerdown', (ev) => {
   }
   const cat = state.cats.find((c) => c.cell === cell);
   if (cat) {
-    selected = selected?.kind === 'cat' && selected.id === cat.id ? null : { kind: 'cat', id: cat.id };
+    beginDrag('cat', cat.id, ev, cellX(cat.cell), cellZ(cat.cell));
     return;
   }
   const dog = state.dogs.find((dg) => dogCells(dg).includes(cell));
   if (dog) {
-    selected = selected?.kind === 'dog' && selected.id === dog.id ? null : { kind: 'dog', id: dog.id };
+    const [c1] = dogCells(dog);
+    beginDrag(
+      'dog',
+      dog.id,
+      ev,
+      cellX(c1) + (dog.axis === 'h' ? 0.5 : 0),
+      cellZ(c1) + (dog.axis === 'v' ? 0.5 : 0),
+    );
     return;
   }
   selected = null;
 });
+
+canvas.addEventListener('pointerup', (ev) => {
+  const d = drag;
+  drag = null;
+  if (!d || ui !== 'play' || anim || won) return;
+  if (!d.active) {
+    // plain click: toggle off if it was already selected
+    if (d.wasSelected) selected = null;
+    return;
+  }
+  const cell = cellFromMouse(ev.offsetX, ev.offsetY);
+  const m = cell !== null ? legalTargets().get(cell) : undefined;
+  if (m && m.kind === d.kind && m.id === d.id) {
+    // drop into place from where the piece hovers right now
+    const from =
+      d.kind === 'cat'
+        ? { x: d.wx, y: 0.6, z: d.wz }
+        : dragDogCenter(state.dogs[d.id], d);
+    startMove(m, performance.now() / 1000, from);
+  }
+  // invalid drop: the piece simply snaps home and stays selected
+});
+canvas.addEventListener('pointercancel', () => {
+  drag = null;
+});
+
+/** A dragged dog stays glued to its runner: free along its axis only. */
+function dragDogCenter(dog: (typeof state.dogs)[number], d: Drag) {
+  const [c1] = dogCells(dog);
+  return dog.axis === 'h'
+    ? { x: d.wx, y: RAISED_H, z: cellZ(c1) }
+    : { x: cellX(c1), y: RAISED_H, z: d.wz };
+}
 
 function doUndo() {
   if (ui !== 'play' || anim) return;
@@ -672,6 +954,7 @@ loadLevel(0);
 Object.assign(window as object, {
   __catjump: {
     cellScreen: (cell: Cell, h = 0.3) => renderer.project(cellX(cell), h, cellZ(cell)),
+    worldScreen: (x: number, y: number, z: number) => renderer.project(x, y, z),
     state: () => ({
       cats: state.cats.map((c) => ({ ...c })),
       dogs: state.dogs.map((dg) => ({ ...dg })),
@@ -691,12 +974,42 @@ Object.assign(window as object, {
     },
     showHint,
     hint: () => hint,
+    particles: () => particles.length,
   },
 });
 
+let lastNow = performance.now() / 1000;
+let dogDustAcc = 0;
+/** Dust scuffs out from UNDER a sliding dog's body — it leaves the puffs
+ * behind as it moves, so the wake forms without ever coming from his face. */
+function emitDogDust(dt: number, now: number) {
+  if (!anim || anim.move.kind !== 'dog') return;
+  const a = animLift('dog', anim.move.id, now);
+  if (!a) return;
+  dogDustAcc += dt;
+  const dog = state.dogs[anim.move.id];
+  while (dogDustAcc > 0.03) {
+    dogDustAcc -= 0.03;
+    // anywhere along the body length, hugging the ground at the paws
+    const along = (Math.random() - 0.5) * 1.2;
+    const side = (Math.random() < 0.5 ? -1 : 1) * (0.14 + Math.random() * 0.1);
+    spawnBurst(
+      a.x + (dog.axis === 'h' ? along : side),
+      RAISED_H,
+      a.z + (dog.axis === 'v' ? along : side),
+      1,
+      { speed: 0.2, up: 0.35, life: 0.32, size: 0.05, gravity: -2 },
+    );
+  }
+}
+
 function frame() {
   const now = performance.now() / 1000;
+  const dt = Math.min(0.05, now - lastNow);
+  lastNow = now;
   if (anim && now - anim.start >= anim.dur) finishMove();
+  emitDogDust(dt, now);
+  updateParticles(dt);
   buildScene(now);
   renderer.frame(now);
   requestAnimationFrame(frame);

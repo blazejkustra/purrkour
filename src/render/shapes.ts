@@ -129,11 +129,11 @@ export function catMesh(body: Rgb): MeshData {
   b.box(0, 0.19, -0.14, 0.56, 0.38, 0.42, body); // rump/haunches
   b.box(0, 0.3, 0.1, 0.44, 0.6, 0.34, body); // upright chest
   b.box(0, 0.26, 0.28, 0.3, 0.42, 0.06, WHITE); // chest patch
-  // front paws
-  b.box(-0.13, 0.06, 0.26, 0.14, 0.12, 0.18, body);
-  b.box(0.13, 0.06, 0.26, 0.14, 0.12, 0.18, body);
-  b.box(-0.13, 0.025, 0.33, 0.14, 0.05, 0.1, WHITE); // toe tips
-  b.box(0.13, 0.025, 0.33, 0.14, 0.05, 0.1, WHITE);
+  // front paws resting on white toe tips (offset sizes: no coplanar faces)
+  b.box(-0.13, 0.1, 0.26, 0.13, 0.07, 0.17, body);
+  b.box(0.13, 0.1, 0.26, 0.13, 0.07, 0.17, body);
+  b.box(-0.13, 0.035, 0.3, 0.15, 0.06, 0.19, WHITE); // toe tips
+  b.box(0.13, 0.035, 0.3, 0.15, 0.06, 0.19, WHITE);
   // head
   b.box(0, 0.76, 0.12, 0.5, 0.4, 0.42, body);
   b.box(0, 0.68, 0.34, 0.22, 0.14, 0.08, WHITE); // muzzle
@@ -141,15 +141,49 @@ export function catMesh(body: Rgb): MeshData {
   // eyes
   b.box(-0.13, 0.8, 0.325, 0.07, 0.09, 0.02, DARK);
   b.box(0.13, 0.8, 0.325, 0.07, 0.09, 0.02, DARK);
-  // ears: outer pyramid + tiny pink inner wedge in front
-  b.pyramid(-0.16, 0.96, 0.11, 0.18, 0.14, 0.2, body);
-  b.pyramid(0.16, 0.96, 0.11, 0.18, 0.14, 0.2, body);
-  b.pyramid(-0.16, 0.96, 0.17, 0.08, 0.05, 0.1, PINK);
-  b.pyramid(0.16, 0.96, 0.17, 0.08, 0.05, 0.1, PINK);
+  // ears: outer pyramid + tiny pink inner wedge in front (bases sunk into
+  // the head so no face is coplanar with the head top)
+  b.pyramid(-0.16, 0.95, 0.11, 0.18, 0.14, 0.21, body);
+  b.pyramid(0.16, 0.95, 0.11, 0.18, 0.14, 0.21, body);
+  b.pyramid(-0.16, 0.95, 0.17, 0.08, 0.05, 0.11, PINK);
+  b.pyramid(0.16, 0.95, 0.17, 0.08, 0.05, 0.11, PINK);
   // tail curling up beside the rump
   b.box(0.24, 0.12, -0.34, 0.12, 0.14, 0.14, belly);
   b.box(0.3, 0.3, -0.36, 0.1, 0.28, 0.1, body);
   b.box(0.3, 0.48, -0.36, 0.12, 0.12, 0.12, WHITE); // white tail tip
+  return b.build();
+}
+
+/** Long low-poly corgi spanning ~1.7 units along z, facing +z: orange coat,
+ * white chest/belly, big upright ears, stubby tail nub. */
+export function corgiMesh(): MeshData {
+  const coat: Rgb = [0.9, 0.56, 0.28];
+  const cream: Rgb = [0.96, 0.9, 0.78];
+  const dark: Rgb = [0.32, 0.24, 0.18];
+  const b = new MeshBuilder();
+  // long low body with a white belly band
+  b.box(0, 0.33, -0.12, 0.46, 0.32, 1.12, coat);
+  b.box(0, 0.2, -0.12, 0.38, 0.08, 1.04, cream);
+  // fluffy white rump patch
+  b.box(0, 0.4, -0.66, 0.4, 0.22, 0.14, cream);
+  // stubby legs standing ON white socks (offset sizes: no coplanar faces)
+  for (const z of [-0.56, 0.34]) {
+    b.box(-0.15, 0.125, z, 0.13, 0.12, 0.14, coat);
+    b.box(0.15, 0.125, z, 0.13, 0.12, 0.14, coat);
+    b.box(-0.15, 0.035, z + 0.02, 0.16, 0.06, 0.18, cream);
+    b.box(0.15, 0.035, z + 0.02, 0.16, 0.06, 0.18, cream);
+  }
+  // head with white blaze, muzzle, big upright ears
+  b.box(0, 0.6, 0.62, 0.38, 0.32, 0.34, coat);
+  b.box(0, 0.62, 0.795, 0.1, 0.28, 0.03, cream); // blaze stripe
+  b.box(0, 0.52, 0.87, 0.2, 0.15, 0.14, cream); // muzzle
+  b.box(0, 0.575, 0.945, 0.08, 0.06, 0.05, dark); // nose
+  b.box(-0.1, 0.665, 0.795, 0.06, 0.08, 0.02, dark); // eyes
+  b.box(0.1, 0.665, 0.795, 0.06, 0.08, 0.02, dark);
+  b.pyramid(-0.12, 0.75, 0.58, 0.15, 0.12, 0.2, coat); // upright ears (base sunk in)
+  b.pyramid(0.12, 0.75, 0.58, 0.15, 0.12, 0.2, coat);
+  // tail nub
+  b.box(0, 0.46, -0.74, 0.1, 0.1, 0.1, cream);
   return b.build();
 }
 
@@ -163,12 +197,13 @@ export function dogMesh(): MeshData {
   // long body + cream belly strip
   b.box(0, 0.34, -0.12, 0.42, 0.3, 1.18, body);
   b.box(0, 0.2, -0.12, 0.34, 0.06, 1.1, cream);
-  // legs
+  // legs standing ON the paws (offset sizes/heights: no coplanar faces to
+  // z-fight — paws are wider than legs and float a hair above the tile)
   for (const z of [-0.6, 0.36]) {
-    b.box(-0.14, 0.1, z, 0.14, 0.2, 0.15, body);
-    b.box(0.14, 0.1, z, 0.14, 0.2, 0.15, body);
-    b.box(-0.14, 0.025, z + 0.03, 0.14, 0.05, 0.17, dark); // paws
-    b.box(0.14, 0.025, z + 0.03, 0.14, 0.05, 0.17, dark);
+    b.box(-0.14, 0.135, z, 0.13, 0.14, 0.14, body);
+    b.box(0.14, 0.135, z, 0.13, 0.14, 0.14, body);
+    b.box(-0.14, 0.035, z + 0.03, 0.16, 0.06, 0.18, dark); // paws
+    b.box(0.14, 0.035, z + 0.03, 0.16, 0.06, 0.18, dark);
   }
   // collar, head, snout
   b.box(0, 0.44, 0.5, 0.4, 0.12, 0.12, collar);
@@ -178,40 +213,76 @@ export function dogMesh(): MeshData {
   // eyes
   b.box(-0.1, 0.64, 0.815, 0.06, 0.08, 0.02, DARK);
   b.box(0.1, 0.64, 0.815, 0.06, 0.08, 0.02, DARK);
-  // floppy ears hanging at the head sides
-  b.box(-0.21, 0.55, 0.62, 0.06, 0.26, 0.18, dark);
-  b.box(0.21, 0.55, 0.62, 0.06, 0.26, 0.18, dark);
+  // floppy ears hanging at the head sides (sunk into the head — a merely
+  // touching face would be coplanar and shimmer)
+  b.box(-0.2, 0.55, 0.62, 0.07, 0.26, 0.18, dark);
+  b.box(0.2, 0.55, 0.62, 0.07, 0.26, 0.18, dark);
   // perky tail
   b.box(0, 0.5, -0.76, 0.09, 0.24, 0.09, body);
   b.box(0, 0.64, -0.76, 0.11, 0.11, 0.11, dark);
   return b.build();
 }
 
-/** Potted houseplant (the cushion piece): terracotta pot + blocky foliage
- * with a single coral bloom. Base at y=0, ~0.78 tall, footprint ~0.5. */
-export function plantMesh(): MeshData {
+/** Terracotta pot with soil (the static half of the houseplant). Base at
+ * y=0; the foliage mesh sits on top at the same instance origin. */
+export function potMesh(): MeshData {
   const pot: Rgb = [0.8, 0.47, 0.34];
   const potRim: Rgb = [0.87, 0.55, 0.4];
   const soil: Rgb = [0.32, 0.24, 0.18];
-  const g1: Rgb = [0.38, 0.62, 0.41];
-  const g2: Rgb = [0.5, 0.74, 0.5];
-  const g3: Rgb = [0.3, 0.52, 0.36];
-  const bloom: Rgb = [0.95, 0.55, 0.48];
   const b = new MeshBuilder();
   b.box(0, 0.11, 0, 0.36, 0.22, 0.36, pot);
   b.box(0, 0.25, 0, 0.44, 0.08, 0.44, potRim);
   b.box(0, 0.275, 0, 0.32, 0.05, 0.32, soil);
-  // blocky foliage cluster
-  b.box(0, 0.44, 0, 0.36, 0.3, 0.36, g1);
-  b.box(-0.11, 0.58, 0.07, 0.24, 0.2, 0.24, g2);
-  b.box(0.11, 0.6, -0.07, 0.22, 0.24, 0.22, g1);
-  b.box(0.04, 0.52, 0.13, 0.18, 0.16, 0.16, g3);
-  b.pyramid(0, 0.72, 0, 0.18, 0.18, 0.2, g2);
-  b.pyramid(-0.15, 0.66, 0.09, 0.12, 0.12, 0.15, g3);
-  b.pyramid(0.16, 0.7, -0.08, 0.11, 0.11, 0.13, g2);
-  // one coral bloom
-  b.box(0.13, 0.76, 0.09, 0.09, 0.08, 0.09, bloom);
-  b.box(0.13, 0.81, 0.09, 0.05, 0.04, 0.05, [1, 0.8, 0.55]);
+  return b.build();
+}
+
+/** Blocky foliage + bloom — the swaying half; same origin as the pot so
+ * both are positioned identically and only this one rotates. Three looks:
+ * 0 = bushy shrub with a coral bloom, 1 = cactus with arms and a pink
+ * flower, 2 = broad-leaf rubber plant on a woody stem. */
+export function foliageMesh(kind: 0 | 1 | 2): MeshData {
+  const b = new MeshBuilder();
+  if (kind === 0) {
+    const g1: Rgb = [0.38, 0.62, 0.41];
+    const g2: Rgb = [0.5, 0.74, 0.5];
+    const g3: Rgb = [0.3, 0.52, 0.36];
+    b.box(0, 0.44, 0, 0.36, 0.3, 0.36, g1);
+    b.box(-0.11, 0.58, 0.07, 0.24, 0.2, 0.24, g2);
+    b.box(0.11, 0.6, -0.07, 0.22, 0.24, 0.22, g1);
+    b.box(0.04, 0.52, 0.13, 0.18, 0.16, 0.16, g3);
+    b.pyramid(0, 0.72, 0, 0.18, 0.18, 0.2, g2);
+    b.pyramid(-0.15, 0.66, 0.09, 0.12, 0.12, 0.15, g3);
+    b.pyramid(0.16, 0.7, -0.08, 0.11, 0.11, 0.13, g2);
+    b.box(0.13, 0.76, 0.09, 0.09, 0.08, 0.09, [0.95, 0.55, 0.48]);
+    b.box(0.13, 0.81, 0.09, 0.05, 0.04, 0.05, [1, 0.8, 0.55]);
+  } else if (kind === 1) {
+    const c1: Rgb = [0.36, 0.6, 0.5];
+    const c2: Rgb = [0.44, 0.7, 0.56];
+    // trunk column + two arms reaching up. Arms PENETRATE the trunk and the
+    // elbow/forearm pairs use different thicknesses — touching-but-coplanar
+    // faces z-fight (same fix as the dog paws).
+    b.box(0, 0.55, 0, 0.22, 0.56, 0.22, c1);
+    b.box(0, 0.85, 0, 0.18, 0.08, 0.18, c2); // pale crown
+    b.box(-0.19, 0.52, 0, 0.26, 0.12, 0.15, c2); // left arm out...
+    b.box(-0.28, 0.65, 0, 0.14, 0.28, 0.17, c1); // ...and up
+    b.box(0.18, 0.44, 0.02, 0.24, 0.12, 0.15, c2); // right arm out...
+    b.box(0.26, 0.56, 0.02, 0.13, 0.22, 0.17, c1); // ...and up
+    b.box(0, 0.93, 0, 0.1, 0.09, 0.1, [0.95, 0.62, 0.75]); // pink flower
+    b.box(0, 0.99, 0, 0.05, 0.05, 0.05, [1, 0.85, 0.6]);
+  } else {
+    const stem: Rgb = [0.5, 0.38, 0.26];
+    const leafDark: Rgb = [0.24, 0.46, 0.32];
+    const leafMid: Rgb = [0.32, 0.56, 0.38];
+    // woody stem with big flat leaves fanned around it
+    b.box(0, 0.5, 0, 0.1, 0.46, 0.1, stem);
+    b.box(-0.19, 0.56, 0.05, 0.34, 0.05, 0.24, leafMid);
+    b.box(0.18, 0.64, -0.06, 0.32, 0.05, 0.22, leafDark);
+    b.box(0.02, 0.5, 0.2, 0.22, 0.05, 0.3, leafDark);
+    b.box(-0.04, 0.44, -0.19, 0.24, 0.05, 0.28, leafMid);
+    b.box(0.05, 0.76, 0.03, 0.26, 0.05, 0.2, leafMid); // top pair
+    b.box(-0.08, 0.82, -0.04, 0.2, 0.05, 0.16, leafDark);
+    b.pyramid(0, 0.85, 0.02, 0.1, 0.1, 0.14, leafMid); // new shoot
+  }
   return b.build();
 }
 
@@ -317,6 +388,14 @@ export function cardboardBoxMesh(): MeshData {
   flap([half, H, -half], [-half, H, -half], [0, 0, -1]); // back
   flap([half, H, half], [half, H, -half], [1, 0, 0]); // right
   flap([-half, H, -half], [-half, H, half], [-1, 0, 0]); // left
+  return b.build();
+}
+
+/** Unit cube centered on the origin — scaled per instance into dust puffs,
+ * confetti bits and drifting motes. */
+export function particleMesh(): MeshData {
+  const b = new MeshBuilder();
+  b.box(0, 0, 0, 1, 1, 1, [1, 1, 1]);
   return b.build();
 }
 
