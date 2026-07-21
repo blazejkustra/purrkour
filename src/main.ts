@@ -23,6 +23,7 @@ import {
 } from './game/model.ts';
 import { LEVELS } from './game/levels.ts';
 import { solve } from './game/solver.ts';
+import { createAudio } from './audio.ts';
 import { createRenderer, type InstanceSpec } from './render/renderer.ts';
 import {
   cardboardBoxMesh,
@@ -134,6 +135,19 @@ function updateHud() {
 
 const BEST_KEY = 'catjump.best';
 const TUTORIAL_KEY = 'catjump.tutorialSeen';
+const MUSIC_KEY = 'catjump.music';
+
+const audio = createAudio();
+const musicWanted = () => localStorage.getItem(MUSIC_KEY) !== '0';
+function refreshMusicButton() {
+  el('music').classList.toggle('muted', !musicWanted());
+}
+/** Every meaningful gesture routes through here: unlocks the context and
+ * (first time) starts the loop if the player hasn't muted it. */
+function audioGesture() {
+  audio.unlock();
+  if (musicWanted() && !audio.musicOn) audio.startMusic();
+}
 const loadBest = (): Record<number, number> => {
   try {
     return JSON.parse(localStorage.getItem(BEST_KEY) ?? '{}');
@@ -221,6 +235,7 @@ function showIntro(i: number) {
 function startPlay() {
   ui = 'play';
   showScreen(null);
+  audioGesture();
 }
 
 // --- tutorial ------------------------------------------------------------------
@@ -308,6 +323,7 @@ function showHint() {
   const sol = solve(state);
   if (!sol || sol.line.length === 0) {
     toast('No way to win from here — undo or reset!');
+    audio.wrong();
     return;
   }
   const move = sol.line[0];
@@ -462,6 +478,7 @@ function yarnAt(px: number, py: number): number {
 
 function pokeYarn(i: number, now: number) {
   yarnPoke[i] = now;
+  audio.select();
   const y = YARNS[i];
   spawnBurst(y.x, -0.15, y.z, 9, {
     colors: [y.tint, [0.98, 0.95, 0.88]],
@@ -497,8 +514,10 @@ function finishMove() {
   updateHud();
   if (m.kind === 'cat') {
     const inBox = state.boxes.includes(m.to) && !state.cappedBoxes.includes(m.to);
-    if (inBox) confettiAt(m.to); // a cat found its box!
-    else puffAt(m.to, 9);
+    if (inBox) {
+      confettiAt(m.to); // a cat found its box!
+      audio.match();
+    } else puffAt(m.to, 9);
   }
   if (isWon(state)) {
     won = true;
@@ -517,6 +536,7 @@ function finishMove() {
     setTimeout(() => {
       el('win').classList.remove('hidden');
       burstConfetti();
+      audio.win();
     }, 350);
   }
 }
@@ -829,6 +849,11 @@ function beginDrag(kind: 'cat' | 'dog', id: number, ev: PointerEvent, wx: number
   selected = { kind, id };
   drag = { kind, id, active: false, wasSelected, startPx: ev.offsetX, startPy: ev.offsetY, wx, wz };
   canvas.setPointerCapture(ev.pointerId);
+  audioGesture();
+  if (!wasSelected) {
+    if (kind === 'cat') audio.meow();
+    else audio.select();
+  }
 }
 
 canvas.addEventListener('pointerdown', (ev) => {
@@ -914,6 +939,13 @@ function doUndo() {
 el('undo').addEventListener('click', doUndo);
 el('reset').addEventListener('click', () => loadLevel(levelIndex));
 el('hint').addEventListener('click', showHint);
+el('music').addEventListener('click', () => {
+  audio.unlock();
+  const on = audio.toggleMusic();
+  localStorage.setItem(MUSIC_KEY, on ? '1' : '0');
+  refreshMusicButton();
+});
+refreshMusicButton();
 el('menu-btn').addEventListener('click', showMenu);
 el('win-menu').addEventListener('click', showMenu);
 el('win-retry').addEventListener('click', () => {

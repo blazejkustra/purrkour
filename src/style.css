@@ -183,6 +183,10 @@ body::after {
   padding: 9px 16px;
   font-size: 14px;
 }
+#music.muted {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
 .btn-big {
   padding: 15px 44px;
   font-size: 18px;
