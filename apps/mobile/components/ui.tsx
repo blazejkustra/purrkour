@@ -1,12 +1,10 @@
-import React from "react";
+import React, { type ReactNode } from "react";
 import {
   StyleSheet,
-  View,
   type StyleProp,
   type TextStyle,
   type ViewStyle,
 } from "react-native";
-import Animated, { Easing, ZoomIn } from "react-native-reanimated";
 import { colors, radius } from "../src/theme.ts";
 import { tapHaptic } from "../src/sound.ts";
 import { BouncyPressable } from "./BouncyPressable.tsx";
@@ -76,47 +74,59 @@ export function Btn({
   );
 }
 
-/** The web's .card: warm rounded panel appearing over a dimmed backdrop. */
-export function CardScreen({ children }: { children: React.ReactNode }) {
+/** Round floating icon button — HUD corners and the menu's music toggle. */
+export function IconFab({
+  size = 56,
+  variant = "paper",
+  label,
+  onPress,
+  children,
+}: {
+  size?: number;
+  variant?: "paper" | "walnut" | "clay";
+  label: string;
+  onPress: () => void;
+  children: ReactNode;
+}) {
   return (
-    <View style={styles.screen} pointerEvents="box-none">
-      <Animated.View
-        entering={ZoomIn.duration(220).easing(Easing.out(Easing.cubic))}
-        style={styles.card}
-      >
-        {children}
-      </Animated.View>
-    </View>
+    <BouncyPressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      scaleTo={0.92}
+      onPress={() => {
+        tapHaptic();
+        onPress();
+      }}
+      style={[
+        styles.fab,
+        { width: size, height: size, borderRadius: size / 2 },
+        variant === "paper" && styles.fabPaper,
+        variant === "walnut" && styles.fabWalnut,
+        variant === "clay" && styles.fabClay,
+      ]}
+    >
+      {children}
+    </BouncyPressable>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+  fab: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(46, 36, 26, 0.38)",
-    zIndex: 3,
+    shadowColor: "#33302b",
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 5,
   },
-  card: {
+  fabPaper: {
     backgroundColor: colors.card,
-    borderRadius: radius.card,
-    paddingVertical: 30,
-    paddingHorizontal: 24,
-    alignItems: "center",
-    width: "92%",
-    maxWidth: 560,
-    maxHeight: "88%",
-    shadowColor: "#2b2016",
-    shadowOpacity: 0.35,
-    shadowRadius: 30,
-    shadowOffset: { width: 0, height: 14 },
-    elevation: 12,
+    borderWidth: 1,
+    borderColor: colors.btnBorder,
   },
+  fabWalnut: { backgroundColor: colors.walnut },
+  fabClay: { backgroundColor: colors.clay },
   btn: {
     borderRadius: radius.btn,
     paddingVertical: 13,

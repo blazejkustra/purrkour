@@ -385,6 +385,8 @@ export function createRenderer({
     addBatch,
     whiteTexture,
     pickGround,
+    /** Live surface aspect ratio (w/h) — lets scene code adapt to portrait. */
+    aspect: () => surface.clientWidth / Math.max(1, surface.clientHeight),
     /** Clear + refill this frame's instances for a batch. */
     instances(name: string): InstanceSpec[] {
       const b = batches.get(name);

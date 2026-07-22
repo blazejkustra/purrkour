@@ -1,6 +1,7 @@
-/** Menu title screen + the modal cards (tutorial, level intro, win) — fed by
- * the shared engine content/progress. The menu is a full-screen layout over
- * the live 3D room: title block up top, a paper level sheet docked below. */
+/** Menu title screen + the bottom-sheet modals (tutorial, level intro, win) —
+ * fed by the shared engine content/progress. The menu is a full-screen layout
+ * over the live 3D room: title block up top, a paper level sheet docked below;
+ * the modals ride the same sheet so the raised board stays visible above. */
 import React from "react";
 import { Image, ScrollView, StyleSheet, View } from "react-native";
 import Animated, {
@@ -18,24 +19,29 @@ import {
   type Progress,
 } from "@purrkour/engine/game/progress.ts";
 import { TUTORIAL_PAGES } from "@purrkour/engine/game/tutorial.ts";
-import { colors, radius } from "../src/theme.ts";
+import { colors } from "../src/theme.ts";
 import { tapHaptic } from "../src/sound.ts";
 import { BouncyPressable } from "./BouncyPressable.tsx";
 import { PText } from "./PText.tsx";
-import { Btn, CardScreen } from "./ui.tsx";
+import { Btn, IconFab } from "./ui.tsx";
+import { MusicIcon } from "./icons.tsx";
 
 const logo = require("../assets/splash-icon.png");
 
 export function MenuScreen({
   progress,
+  musicOn,
   onPlay,
   onHowTo,
   onLevel,
+  onMusic,
 }: {
   progress: Progress;
+  musicOn: boolean;
   onPlay: () => void;
   onHowTo: () => void;
   onLevel: (i: number) => void;
+  onMusic: () => void;
 }) {
   const insets = useSafeAreaInsets();
   return (
@@ -55,11 +61,6 @@ export function MenuScreen({
         <PText weight="extraBold" style={styles.title}>
           PURRKOUR
         </PText>
-        <View style={styles.starChip}>
-          <PText weight="extraBold" style={styles.starChipText}>
-            ★ {progress.totalStars()} / {LEVELS.length * 3}
-          </PText>
-        </View>
         <Btn
           label="Play"
           variant="accent"
@@ -70,13 +71,36 @@ export function MenuScreen({
         <Btn label="How to play" small onPress={onHowTo} />
       </Animated.View>
 
+      {/* music toggle rides the top-left corner, out of the hero's stack */}
+      <Animated.View
+        entering={FadeIn.duration(300)}
+        style={[
+          styles.musicSlot,
+          { top: insets.top + 14, left: insets.left + 16 },
+        ]}
+      >
+        <IconFab
+          size={48}
+          variant="walnut"
+          label={musicOn ? "Music on" : "Music off"}
+          onPress={onMusic}
+        >
+          <MusicIcon
+            size={24}
+            color={musicOn ? colors.plaqueText : "rgba(255, 243, 221, 0.55)"}
+            muted={!musicOn}
+            slashColor={colors.terracotta}
+          />
+        </IconFab>
+      </Animated.View>
+
       <Animated.View
         entering={SlideInDown.duration(320).easing(Easing.out(Easing.cubic))}
         style={[styles.sheet, { paddingBottom: insets.bottom + 10 }]}
       >
-        <View style={styles.sheetHeader}>
-          <PText weight="extraBold" style={styles.sheetTitle}>
-            Levels
+        <View style={styles.starChip}>
+          <PText weight="extraBold" style={styles.starChipText}>
+            ★ {progress.totalStars()} / {LEVELS.length * 3}
           </PText>
         </View>
         <ScrollView contentContainerStyle={styles.grid}>
@@ -102,6 +126,12 @@ export function MenuScreen({
                 : tier === 2
                   ? colors.tier2Ink
                   : colors.starOnCream;
+            const tierEdge =
+              tier === 1
+                ? colors.tier1Edge
+                : tier === 2
+                  ? colors.tier2Edge
+                  : colors.tier0Edge;
             return (
               <BouncyPressable
                 key={level.name}
@@ -114,8 +144,11 @@ export function MenuScreen({
                 style={[
                   styles.lvl,
                   unlocked
-                    ? { backgroundColor: tierBg }
-                    : { backgroundColor: colors.lockedBg, shadowOpacity: 0 },
+                    ? { backgroundColor: tierBg, borderBottomColor: tierEdge }
+                    : {
+                        backgroundColor: colors.lockedBg,
+                        borderBottomColor: "transparent",
+                      },
                 ]}
               >
                 <PText
@@ -135,15 +168,38 @@ export function MenuScreen({
                   ]}
                 >
                   {unlocked
-                    ? stars > 0
-                      ? "★".repeat(stars)
-                      : " "
+                    ? "★".repeat(stars) + "☆".repeat(3 - stars)
                     : `${TIER_STARS[tier]}★`}
                 </PText>
               </BouncyPressable>
             );
           })}
         </ScrollView>
+      </Animated.View>
+    </View>
+  );
+}
+
+/** Bottom-docked replacement for the centered modal card: a light scrim keeps
+ * the raised board visible above while the content rides a levels-style sheet. */
+function SheetModal({ children }: { children: React.ReactNode }) {
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <Animated.View
+        entering={FadeIn.duration(300)}
+        style={styles.modalScrim}
+        pointerEvents="none"
+      />
+      <Animated.View
+        entering={SlideInDown.duration(320).easing(Easing.out(Easing.cubic))}
+        style={[
+          styles.sheet,
+          styles.modalSheet,
+          { paddingBottom: insets.bottom + 14 },
+        ]}
+      >
+        {children}
       </Animated.View>
     </View>
   );
@@ -160,7 +216,7 @@ export function TutorialScreen({
 }) {
   const p = TUTORIAL_PAGES[page];
   return (
-    <CardScreen>
+    <SheetModal>
       <PText weight="extraBold" style={styles.kicker}>
         HOW TO PLAY
       </PText>
@@ -186,7 +242,7 @@ export function TutorialScreen({
           style={styles.btnFlexWide}
         />
       </View>
-    </CardScreen>
+    </SheetModal>
   );
 }
 
@@ -201,7 +257,7 @@ export function IntroScreen({
 }) {
   const level = LEVELS[levelIndex];
   return (
-    <CardScreen>
+    <SheetModal>
       <PText weight="extraBold" style={styles.kicker}>
         LEVEL {levelIndex + 1} OF {LEVELS.length}
       </PText>
@@ -225,7 +281,7 @@ export function IntroScreen({
           style={styles.btnFlexWide}
         />
       </View>
-    </CardScreen>
+    </SheetModal>
   );
 }
 
@@ -248,7 +304,7 @@ export function WinScreen({
   onNext: () => void;
 }) {
   return (
-    <CardScreen>
+    <SheetModal>
       <PText weight="extraBold" style={styles.winTitle}>
         {win.title}
       </PText>
@@ -272,7 +328,7 @@ export function WinScreen({
         <Btn label="Menu" onPress={onMenu} style={styles.btnFlex} />
         <Btn label="Retry" onPress={onRetry} style={styles.btnFlex} />
       </View>
-    </CardScreen>
+    </SheetModal>
   );
 }
 
@@ -311,6 +367,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
   },
+  musicSlot: { position: "absolute" },
   logo: { width: 92, height: 92, marginBottom: 2 },
   title: {
     fontSize: 40,
@@ -320,25 +377,35 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 3 },
     textShadowRadius: 1,
   },
+  /* star total as a walnut plaque tab riding the sheet's top edge — the same
+   * material as the HUD plaque on the board tray */
   starChip: {
-    backgroundColor: colors.starChip,
+    position: "absolute",
+    top: -15,
+    alignSelf: "center",
+    backgroundColor: colors.walnut,
     borderRadius: 999,
-    paddingVertical: 4,
+    // Baloo sits high in its line box — bias the padding down to optically center
+    paddingTop: 6,
+    paddingBottom: 0,
     paddingHorizontal: 20,
-    marginTop: 4,
-    marginBottom: 22,
-    shadowColor: "#33302b",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    borderBottomWidth: 3,
+    borderBottomColor: colors.walnutPressed,
+    shadowColor: "#2b2016",
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 6,
   },
   starChipText: {
-    fontSize: 17,
-    letterSpacing: 1,
-    lineHeight: 26,
+    fontSize: 14,
+    letterSpacing: 1.5,
+    lineHeight: 21,
+    color: colors.plaqueText,
   },
   playBtn: {
     minWidth: 224,
+    marginTop: 18,
     marginBottom: 12,
   },
   sheet: {
@@ -348,47 +415,55 @@ const styles = StyleSheet.create({
     bottom: 0,
     maxHeight: "46%",
     backgroundColor: colors.card,
-    borderTopLeftRadius: radius.card,
-    borderTopRightRadius: radius.card,
-    paddingTop: 14,
-    paddingHorizontal: 18,
+    borderTopLeftRadius: 36,
+    borderTopRightRadius: 36,
+    paddingTop: 26,
+    paddingHorizontal: 16,
     shadowColor: "#2b2016",
     shadowOpacity: 0.3,
     shadowRadius: 24,
     shadowOffset: { width: 0, height: -8 },
     elevation: 14,
   },
-  sheetHeader: {
-    alignItems: "center",
-    marginBottom: 10,
+  /* modal content rides in the same sheet, over a lighter scrim so the board
+   * above stays readable as the live example */
+  modalScrim: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: "rgba(249, 240, 225, 0.45)",
   },
-  sheetTitle: {
-    fontSize: 21,
-    lineHeight: 28,
+  modalSheet: {
+    maxHeight: "80%",
+    alignItems: "center",
+    paddingHorizontal: 24,
   },
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
+    rowGap: 11,
+    columnGap: 8,
     justifyContent: "center",
     paddingBottom: 8,
   },
+  /* platform block: flat face + solid bottom edge, like the room's boxes;
+   * locked tiles keep a transparent edge so rows stay level */
   lvl: {
-    width: "17.5%",
-    borderRadius: 16,
-    paddingVertical: 8,
+    width: "18%",
+    borderRadius: 14,
+    paddingTop: 8,
+    paddingBottom: 5,
     alignItems: "center",
-    shadowColor: "#33302b",
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
+    borderBottomWidth: 4,
   },
-  lvlNum: { fontSize: 20, lineHeight: 27 },
+  lvlNum: { fontSize: 20, lineHeight: 25 },
   lvlStars: {
-    fontSize: 12.5,
-    letterSpacing: 0.5,
-    lineHeight: 17,
-    minHeight: 17,
+    fontSize: 11.5,
+    letterSpacing: 1.5,
+    lineHeight: 16,
+    marginTop: 1,
   },
 
   // --- modal cards -------------------------------------------------------------

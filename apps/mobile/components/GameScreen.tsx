@@ -5,7 +5,19 @@
  * itself lives in @purrkour/engine.
  */
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { AppState, Image, PixelRatio, StyleSheet, View } from "react-native";
+import {
+  AppState,
+  Image,
+  PixelRatio,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import Animated, {
+  Easing,
+  useAnimatedStyle,
+  withTiming,
+} from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { Canvas, type CanvasRef } from "react-native-webgpu";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
@@ -82,6 +94,7 @@ function CozyLight() {
 
 export function GameScreen({ root }: { root: TgpuRoot }) {
   const insets = useSafeAreaInsets();
+  const { height: windowH } = useWindowDimensions();
   const canvasRef = useRef<CanvasRef>(null);
   const booting = useRef(false);
   const sessionRef = useRef<Session | null>(null);
@@ -313,10 +326,28 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
     sessionRef.current?.undo();
   };
 
+  // Whenever a bottom sheet is up (menu, tutorial, intro, win), slide the room
+  // up from behind it so the whole board reads; the strip revealed at the
+  // bottom stays hidden under the sheet.
+  const raised =
+    ui === "menu" || ui === "tutorial" || ui === "intro" || win !== null;
+  const roomShift = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: withTiming(raised ? -windowH * 0.16 : 0, {
+          duration: 360,
+          easing: Easing.out(Easing.cubic),
+        }),
+      },
+    ],
+  }));
+
   return (
     <View style={styles.fill}>
       <GestureDetector gesture={gesture}>
-        <Canvas ref={canvasRef} style={styles.fill} onLayout={onLayout} />
+        <Animated.View style={[styles.fill, roomShift]}>
+          <Canvas ref={canvasRef} style={styles.fill} onLayout={onLayout} />
+        </Animated.View>
       </GestureDetector>
       <CozyLight />
 
@@ -325,23 +356,23 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
         <Hud
           levelIndex={levelIndex}
           moves={moves}
-          musicOn={musicOn}
           onMenu={toMenu}
           onUndo={doUndo}
           onReset={() => session().reset()}
           onHint={() => session().showHint(nowSec())}
-          onMusic={() => {
-            audio.unlock();
-            const on = audio.toggleMusic();
-            progress.setMusicWanted(on);
-            setMusicOn(on);
-          }}
         />
       )}
 
       {ui === "menu" && (
         <MenuScreen
           progress={progress}
+          musicOn={musicOn}
+          onMusic={() => {
+            audio.unlock();
+            const on = audio.toggleMusic();
+            progress.setMusicWanted(on);
+            setMusicOn(on);
+          }}
           onPlay={() => {
             const target = progress.nextCampaignLevel();
             if (!progress.tutorialSeen) openTutorial(() => showIntro(target));

@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#f9efdd" />
     <title>Purrkour — a cozy cat puzzle</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
@@ -15,21 +18,97 @@
     <div class="bg-blob blob-c"></div>
     <canvas id="canvas"></canvas>
 
-    <!-- in-game HUD -->
+    <!-- in-game HUD: corner icon buttons + centered level plaque -->
     <div id="hud" class="hidden">
-      <div id="hud-top">
-        <button id="menu-btn" class="btn btn-small">Menu</button>
-        <div>
-          <div id="level-name"></div>
-          <div id="stats">Moves <span id="moves">0</span> · Par <span id="par">0</span></div>
+      <button
+        id="menu-btn"
+        class="fab fab-48"
+        aria-label="Menu"
+        title="Menu (Esc)"
+      >
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M3 11l9-8 9 8" />
+          <path d="M5.5 9.5V20h4.6v-5.4h3.8V20h4.6V9.5" />
+        </svg>
+      </button>
+      <div id="plaque">
+        <div id="level-name"></div>
+        <div id="stats">
+          Moves <span id="moves">0</span> · Par <span id="par">0</span>
         </div>
       </div>
-      <div id="controls">
-        <button id="undo" class="btn">Undo</button>
-        <button id="reset" class="btn">Reset</button>
-        <button id="hint" class="btn btn-hint">Hint</button>
-        <button id="music" class="btn btn-small" title="Toggle music">&#9834;</button>
+      <div id="hud-bl">
+        <button id="undo" class="fab" aria-label="Undo move" title="Undo (Z)">
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M8.5 4.5L4 9l4.5 4.5" />
+            <path d="M4 9h9.5a6 6 0 016 6v0a6 6 0 01-6 6H9" />
+          </svg>
+        </button>
+        <button
+          id="reset"
+          class="fab"
+          aria-label="Reset level"
+          title="Reset (R)"
+        >
+          <svg
+            width="26"
+            height="26"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20.5 4.5V10H15" />
+            <path d="M3.5 19.5V14H9" />
+            <path
+              d="M4.6 9a8 8 0 0113.2-3l2.7 4M19.4 15a8 8 0 01-13.2 3l-2.7-4"
+            />
+          </svg>
+        </button>
       </div>
+      <button
+        id="hint"
+        class="fab fab-clay fab-68"
+        aria-label="Show hint"
+        title="Hint (H)"
+      >
+        <svg
+          width="34"
+          height="34"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path
+            d="M12 2.8a6.2 6.2 0 00-3.6 11.2c.7.55 1.2 1.3 1.4 2.2h4.4c.2-.9.7-1.65 1.4-2.2A6.2 6.2 0 0012 2.8z"
+          />
+          <path d="M9.8 19.4h4.4" />
+          <path d="M10.6 21.8h2.8" />
+        </svg>
+      </button>
     </div>
 
     <!-- boot loading screen -->
@@ -42,56 +121,95 @@
       </div>
     </div>
 
-    <!-- main menu -->
+    <!-- main menu: full-screen title over the room, levels sheet docked below -->
     <div id="menu" class="screen hidden">
-      <div class="card" id="menu-card">
+      <div id="menu-scrim"></div>
+      <button
+        id="music"
+        class="fab fab-walnut fab-48"
+        aria-label="Toggle music"
+        title="Toggle music"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M9 17.5V6.2l10-2v11.3"
+            stroke="currentColor"
+            stroke-width="2.2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <circle cx="6.6" cy="17.6" r="2.6" fill="currentColor" />
+          <circle cx="16.6" cy="15.6" r="2.6" fill="currentColor" />
+          <path
+            class="slash"
+            d="M4 3.5L20.5 20"
+            stroke="#d9714e"
+            stroke-width="2.6"
+            stroke-linecap="round"
+          />
+        </svg>
+      </button>
+      <div id="menu-hero">
         <img class="logo-img" src="/logo.png" alt="Purrkour" />
         <div id="menu-title">PURRKOUR</div>
-        <div id="menu-tag">Parkour for cats — a cozy puzzle about boxes and the jumps in between.</div>
-        <div id="star-total"></div>
-        <button id="play-btn" class="btn btn-big btn-hint">Play</button>
+        <button id="play-btn" class="btn btn-accent btn-big">Play</button>
         <button id="howto-btn" class="btn">How to play</button>
+        <nav id="menu-links">
+          <a href="/privacy/">Privacy</a>
+          <span aria-hidden="true">·</span>
+          <a href="/terms/">Terms</a>
+        </nav>
+      </div>
+      <div id="level-sheet">
+        <div id="star-total"></div>
         <div id="level-grid"></div>
       </div>
     </div>
 
     <!-- tutorial / onboarding -->
-    <div id="tutorial" class="screen hidden">
+    <div id="tutorial" class="screen modal hidden">
       <div class="card" id="tutorial-card">
+        <div class="kicker">How to play</div>
         <div id="tut-title"></div>
         <div id="tut-body"></div>
         <div id="tut-dots"></div>
-        <div class="card-buttons">
+        <div class="btn-row card-buttons">
           <button id="tut-back" class="btn">Back</button>
-          <button id="tut-next" class="btn btn-hint">Next</button>
+          <button id="tut-next" class="btn btn-accent btn-wide">Next</button>
         </div>
       </div>
     </div>
 
     <!-- pre-level intro card -->
-    <div id="intro" class="screen hidden">
+    <div id="intro" class="screen modal hidden">
       <div class="card" id="intro-card">
-        <div id="intro-kicker"></div>
+        <div id="intro-kicker" class="kicker"></div>
         <div id="intro-name"></div>
         <div id="intro-text"></div>
         <div id="intro-par"></div>
-        <div class="card-buttons">
+        <div class="btn-row card-buttons">
           <button id="intro-menu" class="btn">Menu</button>
-          <button id="intro-go" class="btn btn-big btn-hint">Let's go</button>
+          <button id="intro-go" class="btn btn-accent btn-wide">
+            Let's go
+          </button>
         </div>
       </div>
     </div>
 
     <div id="toast" class="hidden"></div>
-    <div id="win" class="hidden">
-      <div id="win-card">
+    <div id="win" class="screen modal hidden">
+      <div class="card" id="win-card">
         <div id="win-title">PURRFECT!</div>
         <div id="win-stars"></div>
         <div id="win-detail"></div>
         <div id="win-buttons">
-          <button id="win-menu" class="btn">Menu</button>
-          <button id="win-retry" class="btn">Retry</button>
-          <button id="win-next" class="btn btn-primary">Next Level</button>
+          <button id="win-next" class="btn btn-accent btn-big btn-stretch">
+            Next Level
+          </button>
+          <div class="btn-row">
+            <button id="win-menu" class="btn">Menu</button>
+            <button id="win-retry" class="btn">Retry</button>
+          </div>
         </div>
       </div>
     </div>

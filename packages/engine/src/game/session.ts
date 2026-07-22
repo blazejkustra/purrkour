@@ -166,16 +166,30 @@ const SPARK_COLORS: [number, number, number][] = [
   [0.75, 0.58, 0.9],
 ];
 
-/** The two yarn balls on the rug — clickable toys. */
+/** The two yarn balls on the rug — clickable toys. Wide screens show them
+ * flanking the board; tall (portrait) screens can't — the camera only fits
+ * the board's width — so there they lounge on the rug's front edge. */
 const YARNS: {
-  x: number;
-  z: number;
+  wide: [number, number];
+  tall: [number, number];
   baseRot: number;
   s: number;
   tint: [number, number, number];
 }[] = [
-  { x: 3.5, z: 0.7, baseRot: 2.2, s: 1, tint: [0.93, 0.7, 0.34] },
-  { x: -3.55, z: 1.0, baseRot: 5.1, s: 0.85, tint: [0.56, 0.66, 0.86] },
+  {
+    wide: [3.5, 0.7],
+    tall: [1.9, 3.3],
+    baseRot: 2.2,
+    s: 1,
+    tint: [0.93, 0.7, 0.34],
+  },
+  {
+    wide: [-3.55, 1.0],
+    tall: [-2.05, 3.05],
+    baseRot: 5.1,
+    s: 0.85,
+    tint: [0.56, 0.66, 0.86],
+  },
 ];
 
 const easeOut = (t: number) => 1 - (1 - t) * (1 - t);
@@ -482,12 +496,17 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
 
   // --- yarn toys -----------------------------------------------------------------
 
+  /** Where a yarn ball sits right now — depends on the screen's aspect. */
+  const yarnXZ = (y: (typeof YARNS)[number]) =>
+    renderer.aspect() < 1.1 ? y.tall : y.wide;
+
   /** Off-board click on a yarn ball? Returns its index, or -1. */
   function yarnAt(px: number, py: number): number {
     const hit = renderer.pickGround(px, py, -0.33);
     if (!hit) return -1;
     for (const [i, y] of YARNS.entries()) {
-      if (Math.hypot(hit[0] - y.x, hit[1] - y.z) < 0.55 * y.s) return i;
+      const [yx, yz] = yarnXZ(y);
+      if (Math.hypot(hit[0] - yx, hit[1] - yz) < 0.55 * y.s) return i;
     }
     return -1;
   }
@@ -496,7 +515,8 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
     yarnPoke[i] = now;
     events.sound("select");
     const y = YARNS[i];
-    spawnBurst(y.x, -0.15, y.z, 9, {
+    const [yx, yz] = yarnXZ(y);
+    spawnBurst(yx, -0.15, yz, 9, {
       colors: [y.tint, [0.98, 0.95, 0.88]],
       speed: 0.8,
       up: 1.7,
@@ -730,8 +750,9 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
         spin = easeOut(k) * Math.PI * 4;
         squash = k < 0.12 ? 0.8 : k > 0.88 ? 0.85 : 1.08;
       }
+      const [yx, yz] = yarnXZ(y);
       yarn.push({
-        pos: [y.x, -0.335 + hop, y.z],
+        pos: [yx, -0.335 + hop, yz],
         rot: y.baseRot + spin + 0.05 * Math.sin(now * 0.8 + i * 2),
         scl: [
           y.s * (2 - squash) * 0.94,

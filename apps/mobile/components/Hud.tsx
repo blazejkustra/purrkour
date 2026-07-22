@@ -1,80 +1,33 @@
 /**
- * In-game HUD, mobile-game grammar: round icon buttons in the top corners
- * (home, sound), a centered walnut plaque naming the level, and floating
- * action buttons in the bottom corners — undo/reset as a left cluster, the
- * clay hint bulb alone on the right. All chrome sits on walnut/paper
- * surfaces so it keeps contrast over the warm room.
+ * In-game HUD, mobile-game grammar: a round paper home button in the top-left
+ * corner, a centered washi-label plaque naming the level — a tilted paper
+ * card "taped" at its corners — and floating action buttons in the bottom
+ * corners: undo/reset as a left cluster, the clay hint bulb alone on the
+ * right. (Music toggle lives on the menu.)
  */
-import React, { type ReactNode } from "react";
+import React from "react";
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LEVELS } from "@purrkour/engine/game/levels.ts";
 import { colors } from "../src/theme.ts";
-import { tapHaptic } from "../src/sound.ts";
-import { BouncyPressable } from "./BouncyPressable.tsx";
 import { PText } from "./PText.tsx";
-import {
-  HintIcon,
-  HomeIcon,
-  MusicIcon,
-  ResetIcon,
-  UndoIcon,
-} from "./icons.tsx";
-
-/** Round floating icon button. */
-function IconFab({
-  size = 56,
-  variant = "paper",
-  label,
-  onPress,
-  children,
-}: {
-  size?: number;
-  variant?: "paper" | "walnut" | "clay";
-  label: string;
-  onPress: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <BouncyPressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      scaleTo={0.92}
-      onPress={() => {
-        tapHaptic();
-        onPress();
-      }}
-      style={[
-        styles.fab,
-        { width: size, height: size, borderRadius: size / 2 },
-        variant === "paper" && styles.fabPaper,
-        variant === "walnut" && styles.fabWalnut,
-        variant === "clay" && styles.fabClay,
-      ]}
-    >
-      {children}
-    </BouncyPressable>
-  );
-}
+import { IconFab } from "./ui.tsx";
+import { HintIcon, HomeIcon, ResetIcon, UndoIcon } from "./icons.tsx";
 
 export function Hud({
   levelIndex,
   moves,
-  musicOn,
   onMenu,
   onUndo,
   onReset,
   onHint,
-  onMusic,
 }: {
   levelIndex: number;
   moves: number;
-  musicOn: boolean;
   onMenu: () => void;
   onUndo: () => void;
   onReset: () => void;
   onHint: () => void;
-  onMusic: () => void;
 }) {
   const insets = useSafeAreaInsets();
   const level = LEVELS[levelIndex];
@@ -83,11 +36,13 @@ export function Hud({
   const side = 16;
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      {/* top bar: corner icon buttons + centered level plaque */}
+      {/* top bar: corner icon buttons + centered washi level label */}
       <View style={[styles.topRow, { top }]} pointerEvents="box-none">
         <View style={styles.plaque}>
+          <View style={[styles.tape, styles.tapeL]} />
+          <View style={[styles.tape, styles.tapeR]} />
           <PText weight="extraBold" style={styles.levelName} numberOfLines={1}>
-            {levelIndex + 1} · {level.name}
+            {level.name}
           </PText>
           <PText weight="semiBold" style={styles.stats}>
             Moves {moves} · Par {level.par}
@@ -95,26 +50,10 @@ export function Hud({
         </View>
       </View>
       <View style={[styles.slot, { top, left: side + insets.left }]}>
-        <IconFab size={48} variant="walnut" label="Menu" onPress={onMenu}>
-          <HomeIcon size={24} color={colors.plaqueText} />
+        <IconFab size={48} label="Menu" onPress={onMenu}>
+          <HomeIcon size={24} color={colors.ink} />
         </IconFab>
       </View>
-      <View style={[styles.slot, { top, right: side + insets.right }]}>
-        <IconFab
-          size={48}
-          variant="walnut"
-          label={musicOn ? "Music on" : "Music off"}
-          onPress={onMusic}
-        >
-          <MusicIcon
-            size={24}
-            color={musicOn ? colors.plaqueText : "rgba(255, 243, 221, 0.55)"}
-            muted={!musicOn}
-            slashColor={colors.terracotta}
-          />
-        </IconFab>
-      </View>
-
       {/* bottom corners: undo/reset cluster left, hint bulb right */}
       <View style={[styles.bottomLeft, { bottom, left: side + insets.left }]}>
         <IconFab label="Undo move" onPress={onUndo}>
@@ -143,29 +82,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   slot: { position: "absolute" },
+  /* washi label: tilted paper card, "taped" to the screen at its corners */
   plaque: {
-    backgroundColor: colors.walnut,
-    borderRadius: 18,
-    paddingVertical: 6,
-    paddingHorizontal: 20,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.btnBorder,
+    borderRadius: 20,
+    paddingTop: 7,
+    paddingBottom: 3,
+    paddingHorizontal: 22,
     alignItems: "center",
     justifyContent: "center",
+    maxWidth: 240,
+    transform: [{ rotate: "2deg" }],
     shadowColor: "#2b2016",
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.14,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
     elevation: 4,
-    maxWidth: 230,
   },
+  tape: {
+    position: "absolute",
+    top: -7,
+    width: 36,
+    height: 14,
+    backgroundColor: "rgba(255, 255, 255, 0.55)",
+    borderWidth: 1,
+    borderColor: "rgba(46, 38, 32, 0.08)",
+  },
+  tapeL: { left: -10, transform: [{ rotate: "-35deg" }] },
+  tapeR: { right: -10, transform: [{ rotate: "35deg" }] },
   levelName: {
-    fontSize: 18,
+    fontSize: 19,
     letterSpacing: 0.2,
-    color: colors.plaqueText,
+    lineHeight: 25,
+    color: colors.ink,
   },
   stats: {
-    marginTop: -4,
-    fontSize: 13.5,
-    color: colors.plaqueSoft,
+    marginTop: -2,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.inkSoft,
   },
   bottomLeft: {
     position: "absolute",
@@ -173,20 +130,4 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   bottomRight: { position: "absolute" },
-  fab: {
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#33302b",
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 5,
-  },
-  fabPaper: {
-    backgroundColor: colors.card,
-    borderWidth: 1,
-    borderColor: colors.btnBorder,
-  },
-  fabWalnut: { backgroundColor: colors.walnut },
-  fabClay: { backgroundColor: colors.clay },
 });

@@ -23,14 +23,20 @@ export const colors = {
   amber: "#f0b64e",
   /** Star badge chip — amber field with ink text (gold-on-cream was weak). */
   starChip: "#f2c14e",
+  starChipEdge: "#d9a636",
   starOnCream: "#a06f0a",
   /** The page gradient's midpoint — the GPU clear color. */
   paperBg: "#f4e3c4",
-  /** Level tiles, rows 1-2 — deep enough to read against the card white. */
+  /** Level tiles, rows 1-2 — deep enough to read against the card white.
+   * Each tier pairs a face with a darker "edge" so tiles read as solid
+   * platform blocks, the same material the cat jumps on in the room. */
   tier0Bg: "#eedcba",
+  tier0Edge: "#d8bd8d",
   tier1Bg: "#f9e6b8",
+  tier1Edge: "#e5c073",
   tier1Ink: "#5f4410",
   tier2Bg: "#e6d9f6",
+  tier2Edge: "#c6b2e2",
   tier2Ink: "#44315f",
   lockedInk: "rgba(46, 38, 32, 0.38)",
   lockedBg: "rgba(46, 38, 32, 0.07)",

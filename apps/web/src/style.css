@@ -1,9 +1,9 @@
 @font-face {
-  font-family: 'Baloo 2';
+  font-family: "Baloo 2";
   font-style: normal;
   font-weight: 400 800;
   font-display: swap;
-  src: url('/fonts/baloo2-latin.woff2') format('woff2');
+  src: url("/fonts/baloo2-latin.woff2") format("woff2");
 }
 
 * {
@@ -12,16 +12,37 @@
   box-sizing: border-box;
 }
 
+/* Cozy living-room palette shared with the mobile app (apps/mobile/src/theme.ts) —
+ * keep the two in sync when tuning. */
 :root {
-  --ink: #3a3129;
-  --ink-soft: #74665a;
+  --ink: #2e2620;
+  --ink-soft: #5f5143;
   --paper: #f9f0e1;
   --card: #fffaf0;
+  --paper-btn: #f4e8d3;
+  --btn-border: rgba(46, 38, 32, 0.14);
+  --clay: #b85a3c;
+  --clay-pressed: #9c4a30;
   --terracotta: #d9714e;
-  --terracotta-deep: #b85a3c;
-  --sage: #9bb98f;
-  --teal: #6b4f3a;
+  --walnut: #41332a;
+  --walnut-pressed: #33281f;
+  --plaque-text: #fff3dd;
+  --plaque-soft: rgba(255, 243, 221, 0.78);
   --amber: #f0b64e;
+  --star-chip: #f2c14e;
+  --star-chip-edge: #d9a636;
+  --star-on-cream: #a06f0a;
+  --tier0-bg: #eedcba;
+  --tier0-edge: #d8bd8d;
+  --tier1-bg: #f9e6b8;
+  --tier1-edge: #e5c073;
+  --tier1-ink: #5f4410;
+  --tier2-bg: #e6d9f6;
+  --tier2-edge: #c6b2e2;
+  --tier2-ink: #44315f;
+  --locked-ink: rgba(46, 38, 32, 0.38);
+  --locked-bg: rgba(46, 38, 32, 0.07);
+  --title-shadow: rgba(120, 78, 40, 0.22);
   --shadow: 0 10px 30px rgba(58, 49, 41, 0.16);
 }
 
@@ -32,14 +53,20 @@ body {
   overscroll-behavior: none;
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  font-family: 'Baloo 2', 'Avenir Next', 'Nunito', -apple-system, system-ui, sans-serif;
+  font-family:
+    "Baloo 2",
+    "Avenir Next",
+    "Nunito",
+    -apple-system,
+    system-ui,
+    sans-serif;
   background: linear-gradient(160deg, #f9efdd 0%, #f0dfc2 55%, #e6cda6 100%);
   color: var(--ink);
 }
 
 /* warm lamp glow from the top-right + a soft vignette hug at the edges */
 body::before {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
   background: radial-gradient(
@@ -50,17 +77,16 @@ body::before {
   pointer-events: none;
 }
 body::after {
-  content: '';
+  content: "";
   position: fixed;
   inset: 0;
-  background: radial-gradient(ellipse 85% 80% at 50% 45%, transparent 55%, rgba(96, 64, 40, 0.2));
+  background: radial-gradient(
+    ellipse 85% 80% at 50% 45%,
+    transparent 55%,
+    rgba(96, 64, 40, 0.2)
+  );
   pointer-events: none;
   z-index: 1;
-}
-#hud,
-#toast,
-#win {
-  z-index: 2;
 }
 
 /* big, quiet organic shapes — texture without noise */
@@ -111,129 +137,265 @@ body::after {
   touch-action: none;
 }
 
+.hidden {
+  display: none !important;
+}
+
+/* --- in-game HUD: corner FABs + centered walnut plaque ------------------------- */
+
 #hud {
   position: fixed;
-  top: 26px;
-  left: 28px;
-  user-select: none;
+  inset: 0;
   pointer-events: none;
+  user-select: none;
+  z-index: 2;
 }
-#hud button {
+#hud .fab {
   pointer-events: auto;
 }
 
-#hud-top {
+.fab {
   display: flex;
   align-items: center;
-  gap: 14px;
-}
-
-#level-name {
-  font-size: 21px;
-  font-weight: 700;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--btn-border);
+  border-radius: 50%;
+  background: var(--card);
   color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(51, 48, 43, 0.22);
+  transition:
+    transform 0.12s ease,
+    background 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 9px 20px rgba(51, 48, 43, 0.26);
+}
+.fab:active {
+  transform: scale(0.92);
+  box-shadow: 0 4px 10px rgba(51, 48, 43, 0.2);
+}
+.fab-walnut {
+  background: var(--walnut);
+  color: var(--plaque-text);
+  border: none;
+}
+.fab-walnut:hover,
+.fab-walnut:active {
+  background: var(--walnut-pressed);
+}
+.fab-clay {
+  background: var(--clay);
+  color: #fff6ea;
+  border: none;
+}
+.fab-clay:hover,
+.fab-clay:active {
+  background: var(--clay-pressed);
+}
+.fab-48 {
+  width: 48px;
+  height: 48px;
+}
+.fab-68 {
+  width: 68px;
+  height: 68px;
 }
 
+#menu-btn {
+  position: fixed;
+  top: calc(14px + env(safe-area-inset-top));
+  left: calc(16px + env(safe-area-inset-left));
+}
+/* music toggle lives on the menu, top-left — balancing the legal links */
+#music {
+  position: fixed;
+  top: calc(14px + env(safe-area-inset-top));
+  left: calc(16px + env(safe-area-inset-left));
+  z-index: 2;
+}
+#music .slash {
+  display: none;
+}
+#music.muted {
+  color: rgba(255, 243, 221, 0.55);
+}
+#music.muted .slash {
+  display: block;
+}
+
+/* washi label: tilted paper card, "taped" to the screen at its corners */
+#plaque {
+  position: fixed;
+  top: calc(14px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%) rotate(2deg);
+  background: var(--card);
+  border: 1px solid var(--btn-border);
+  border-radius: 20px;
+  padding: 7px 24px 4px;
+  text-align: center;
+  max-width: min(60vw, 300px);
+  box-shadow: 0 6px 16px rgba(43, 32, 22, 0.14);
+}
+#plaque::before,
+#plaque::after {
+  content: "";
+  position: absolute;
+  top: -7px;
+  width: 36px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(46, 38, 32, 0.08);
+}
+#plaque::before {
+  left: -10px;
+  transform: rotate(-35deg);
+}
+#plaque::after {
+  right: -10px;
+  transform: rotate(35deg);
+}
+#level-name {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 #stats {
-  margin-top: 1px;
-  font-size: 16px;
+  margin-top: 0;
+  font-size: 13px;
   font-weight: 600;
   color: var(--ink-soft);
-  letter-spacing: 0.4px;
 }
 
-#controls {
-  margin-top: 14px;
+#hud-bl {
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  left: calc(16px + env(safe-area-inset-left));
   display: flex;
-  gap: 10px;
+  gap: 12px;
 }
+#hint {
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  right: calc(16px + env(safe-area-inset-right));
+}
+
+/* --- buttons ------------------------------------------------------------------- */
 
 .btn {
-  border: none;
-  border-radius: 14px;
-  padding: 11px 22px;
-  font-size: 17px;
-  font-weight: 700;
+  border: 1px solid var(--btn-border);
+  border-radius: 22px;
+  padding: 12px 26px;
   font-family: inherit;
+  font-size: 18px;
+  font-weight: 800;
   color: var(--ink);
-  background: var(--card);
-  box-shadow:
-    0 1px 0 rgba(51, 48, 43, 0.06),
-    0 6px 16px rgba(51, 48, 43, 0.12);
+  background: var(--paper-btn);
+  box-shadow: 0 5px 14px rgba(51, 48, 43, 0.12);
   cursor: pointer;
   transition:
     transform 0.12s ease,
+    background 0.12s ease,
     box-shadow 0.12s ease;
 }
 .btn:hover {
   transform: translateY(-2px);
-  box-shadow:
-    0 2px 0 rgba(51, 48, 43, 0.05),
-    0 10px 22px rgba(51, 48, 43, 0.16);
+  box-shadow: 0 8px 20px rgba(51, 48, 43, 0.16);
 }
 .btn:active {
-  transform: translateY(1px);
+  transform: scale(0.95);
   box-shadow: 0 3px 8px rgba(51, 48, 43, 0.12);
 }
-.btn-hint {
-  background: var(--terracotta);
-  color: #fff8f2;
+.btn-accent {
+  background: var(--clay);
+  color: #fff6ea;
+  border: none;
 }
-.btn-hint:hover {
-  background: var(--terracotta-deep);
-}
-.btn-primary {
-  background: var(--teal);
-  color: #f0faf6;
-}
-
-.btn-small {
-  padding: 9px 16px;
-  font-size: 15px;
-}
-#music.muted {
-  opacity: 0.45;
-  text-decoration: line-through;
+.btn-accent:hover,
+.btn-accent:active {
+  background: var(--clay-pressed);
 }
 .btn-big {
   padding: 15px 44px;
   font-size: 20px;
-  border-radius: 18px;
+  border-radius: 24px;
+}
+.btn-stretch {
+  display: block;
+  width: 100%;
+}
+.btn-row {
+  display: flex;
+  gap: 12px;
+}
+.btn-row .btn {
+  flex: 1;
+}
+.btn-row .btn-wide {
+  flex: 1.6;
 }
 
-/* --- full-screen UI states --------------------------------------------------- */
+/* --- full-screen UI states ----------------------------------------------------- */
 
 .screen {
   position: fixed;
   inset: 0;
+  z-index: 3;
+}
+.modal {
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 20px;
   background: rgba(58, 45, 33, 0.32);
   backdrop-filter: blur(5px);
-  z-index: 3;
 }
 
 .card {
   background: var(--card);
-  border-radius: 26px;
-  padding: 36px 44px;
+  border-radius: 30px;
+  padding: 32px 34px;
   text-align: center;
-  max-width: 560px;
-  width: min(92vw, 560px);
+  width: min(92vw, 480px);
   max-height: 88vh;
   overflow-y: auto;
   box-shadow:
     0 24px 60px rgba(51, 40, 30, 0.35),
     0 2px 0 rgba(255, 255, 255, 0.6) inset;
-  animation: pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+  /* timed ease-out only — no springy overshoot */
+  animation: card-in 0.22s cubic-bezier(0.33, 1, 0.68, 1);
+}
+@keyframes card-in {
+  from {
+    transform: scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .card-buttons {
   margin-top: 24px;
-  display: flex;
-  gap: 12px;
-  justify-content: center;
+}
+
+.kicker {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--clay);
 }
 
 /* the box-cat logo on loading + menu */
@@ -245,10 +407,13 @@ body::after {
   filter: drop-shadow(0 8px 18px rgba(58, 49, 41, 0.28));
 }
 
-/* loading */
+/* --- loading ------------------------------------------------------------------- */
+
 #loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(160deg, #f9efdd 0%, #f0dfc2 55%, #e6cda6 100%);
-  backdrop-filter: none;
 }
 #loading-inner {
   text-align: center;
@@ -259,6 +424,7 @@ body::after {
   font-weight: 800;
   letter-spacing: 7px;
   color: var(--ink);
+  text-shadow: 0 3px 0 var(--title-shadow);
 }
 #load-track {
   width: 220px;
@@ -287,77 +453,180 @@ body::after {
   pointer-events: none;
 }
 
-/* menu */
+/* --- main menu: title screen over the room + docked levels sheet --------------- */
+
+#menu {
+  display: flex;
+  flex-direction: column;
+}
+#menu-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(249, 240, 225, 0.78);
+}
+#menu-hero {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
 #menu-title {
-  margin-top: 10px;
-  font-size: 42px;
+  margin-top: 8px;
+  font-size: 46px;
   font-weight: 800;
   letter-spacing: 8px;
   color: var(--ink);
-}
-#menu-tag {
-  margin: 8px auto 22px;
-  max-width: 330px;
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 1.5;
-  color: var(--ink-soft);
+  text-shadow: 0 3px 0 var(--title-shadow);
 }
 #play-btn {
-  display: block;
-  margin: 0 auto 10px;
+  margin-top: 22px;
+  min-width: 224px;
 }
 #howto-btn {
-  display: block;
+  margin-top: 12px;
+  padding: 10px 22px;
+  font-size: 16px;
+}
+/* quiet legal links, out of the hero's vertical stack so they never collide
+ * with the sheet on short viewports */
+#menu-links {
+  position: absolute;
+  top: calc(14px + env(safe-area-inset-top));
+  right: 18px;
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+#menu-links a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(95, 81, 67, 0.35);
+}
+#menu-links a:hover {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+#level-sheet {
+  position: relative;
+  width: min(100%, 560px);
   margin: 0 auto;
+  max-height: 46vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--card);
+  border-radius: 36px 36px 0 0;
+  padding: 28px 16px calc(16px + env(safe-area-inset-bottom));
+  box-shadow:
+    0 -12px 40px rgba(51, 40, 30, 0.18),
+    0 2px 0 rgba(255, 255, 255, 0.7) inset;
+  animation: sheet-in 0.32s cubic-bezier(0.33, 1, 0.68, 1);
+}
+@keyframes sheet-in {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+/* star total as a walnut plaque tab riding the sheet's top edge — the same
+ * material as the HUD plaque on the board tray */
+#star-total {
+  position: absolute;
+  top: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  /* Baloo sits high in its line box — bias the padding down to optically center */
+  padding: 4px 20px 2px;
+  border-radius: 999px;
+  background: var(--walnut);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+  color: var(--plaque-text);
+  box-shadow:
+    0 3px 0 var(--walnut-pressed),
+    0 8px 20px rgba(51, 40, 30, 0.25);
 }
 #level-grid {
-  margin-top: 24px;
+  overflow-y: auto;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 9px;
+  gap: 12px 9px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(65, 51, 42, 0.25) transparent;
 }
+#level-grid::-webkit-scrollbar {
+  width: 6px;
+}
+#level-grid::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(65, 51, 42, 0.25);
+}
+/* level tiles as platform blocks — flat face, solid bottom edge, the same
+ * material the cat jumps on; pressing one pushes the block down */
 .lvl {
+  --edge: var(--tier0-edge);
   position: relative;
   border: none;
   border-radius: 14px;
-  padding: 10px 0 7px;
+  padding: 9px 0 6px;
   font-family: inherit;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 18px;
+  line-height: 1.15;
   color: var(--ink);
-  background: var(--paper);
-  box-shadow: 0 4px 10px rgba(51, 48, 43, 0.1);
+  background: var(--tier0-bg);
+  box-shadow: 0 4px 0 var(--edge);
   cursor: pointer;
-  transition: transform 0.12s ease;
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
 }
 .lvl:hover:not(:disabled) {
-  transform: translateY(-2px);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 0 var(--edge);
+}
+.lvl:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--edge);
 }
 .lvl:disabled {
-  color: rgba(58, 49, 41, 0.32);
-  background: rgba(58, 49, 41, 0.06);
+  color: var(--locked-ink);
+  background: var(--locked-bg);
   box-shadow: none;
   cursor: default;
 }
 .lvl .lvl-stars {
   display: block;
-  font-size: 12px;
-  letter-spacing: 1px;
-  color: #d99a26;
-  min-height: 12px;
+  margin-top: 1px;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: var(--star-on-cream);
 }
 .lvl:disabled .lvl-stars {
-  color: rgba(58, 49, 41, 0.32);
+  color: var(--locked-ink);
 }
 /* star-gated tier rows, Rocket-League style: amber then violet */
 .lvl.tier-1:not(.locked) {
-  background: #fbecca;
-  color: #7a5a17;
+  background: var(--tier1-bg);
+  color: var(--tier1-ink);
+  --edge: var(--tier1-edge);
 }
 .lvl.tier-2:not(.locked) {
-  background: #ece2f8;
-  color: #4f3a75;
+  background: var(--tier2-bg);
+  color: var(--tier2-ink);
+  --edge: var(--tier2-edge);
 }
 .lvl.tier-1:not(.locked) .lvl-stars {
   color: #c98f1d;
@@ -366,27 +635,23 @@ body::after {
   color: #8a6cc4;
 }
 .lvl.locked .lvl-stars.need {
-  font-weight: 800;
-  color: rgba(58, 49, 41, 0.4);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.5px;
+  color: var(--locked-ink);
 }
 
-#star-total {
-  margin: -14px auto 18px;
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  color: #d99a26;
-}
+/* --- tutorial ------------------------------------------------------------------ */
 
-/* tutorial */
 #tut-title {
+  margin-top: 8px;
   font-size: 27px;
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
   color: var(--ink);
 }
 #tut-body {
-  margin: 14px auto 0;
+  margin: 12px auto 0;
   max-width: 400px;
   font-size: 18px;
   font-weight: 500;
@@ -403,28 +668,22 @@ body::after {
   width: 9px;
   height: 9px;
   border-radius: 50%;
-  background: rgba(58, 49, 41, 0.18);
+  background: rgba(46, 38, 32, 0.18);
 }
 .dot.on {
-  background: var(--terracotta);
+  background: var(--clay);
 }
 
-/* level intro */
-#intro-kicker {
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--terracotta);
-}
+/* --- level intro --------------------------------------------------------------- */
+
 #intro-name {
-  margin-top: 6px;
+  margin-top: 8px;
   font-size: 34px;
   font-weight: 800;
   color: var(--ink);
 }
 #intro-text {
-  margin: 14px auto 0;
+  margin: 12px auto 0;
   max-width: 400px;
   font-size: 18px;
   font-weight: 500;
@@ -432,114 +691,32 @@ body::after {
   color: var(--ink-soft);
 }
 #intro-par {
-  margin-top: 14px;
-  font-size: 16px;
+  display: inline-block;
+  margin-top: 16px;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: var(--paper-btn);
+  border: 1px solid var(--btn-border);
+  font-size: 15px;
   font-weight: 700;
   color: var(--ink);
 }
 
-/* --- small screens (phones) --------------------------------------------------- */
-
-@media (max-width: 700px) {
-  #hud {
-    top: calc(12px + env(safe-area-inset-top));
-    left: 14px;
-    right: 14px;
-  }
-  #level-name {
-    font-size: 19px;
-  }
-  #stats {
-    font-size: 15px;
-  }
-  .btn {
-    padding: 11px 18px;
-    font-size: 16px;
-  }
-  .btn-small {
-    padding: 9px 14px;
-    font-size: 15px;
-  }
-  .btn-big {
-    padding: 14px 36px;
-    font-size: 19px;
-  }
-  /* thumb-reach: play controls dock to the bottom center */
-  #controls {
-    position: fixed;
-    left: 50%;
-    bottom: calc(16px + env(safe-area-inset-bottom));
-    transform: translateX(-50%);
-    margin: 0;
-  }
-  #toast {
-    bottom: calc(86px + env(safe-area-inset-bottom));
-    font-size: 16px;
-    padding: 11px 20px;
-    width: max-content;
-    max-width: 88vw;
-  }
-  .card {
-    padding: 26px 22px;
-    border-radius: 22px;
-  }
-  #menu-title {
-    font-size: 36px;
-    letter-spacing: 6px;
-  }
-  #menu-tag {
-    font-size: 16px;
-    margin-bottom: 18px;
-  }
-  #level-grid {
-    gap: 7px;
-    margin-top: 18px;
-  }
-  .lvl {
-    font-size: 17px;
-    padding: 8px 0 6px;
-    border-radius: 12px;
-  }
-  #tut-title {
-    font-size: 25px;
-  }
-  #tut-body,
-  #intro-text {
-    font-size: 17px;
-  }
-  #intro-name {
-    font-size: 30px;
-  }
-  #win-card {
-    padding: 30px 26px;
-    max-width: 88vw;
-  }
-  #win-title {
-    font-size: 30px;
-    letter-spacing: 3px;
-  }
-  #win-stars {
-    font-size: 36px;
-  }
-  #win-detail {
-    font-size: 16px;
-  }
-  #win-buttons {
-    flex-wrap: wrap;
-  }
-}
+/* --- toast --------------------------------------------------------------------- */
 
 #toast {
   position: fixed;
   left: 50%;
-  bottom: 44px;
+  bottom: calc(100px + env(safe-area-inset-bottom));
   transform: translateX(-50%);
-  background: var(--ink);
-  color: var(--paper);
+  background: var(--walnut);
+  color: var(--plaque-text);
   font-weight: 600;
   font-size: 17px;
   padding: 13px 26px;
-  border-radius: 16px;
+  border-radius: 18px;
+  width: max-content;
+  max-width: 88vw;
   box-shadow: var(--shadow);
   animation: toast-in 0.25s ease;
   pointer-events: none;
@@ -556,47 +733,14 @@ body::after {
   }
 }
 
-#win {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(51, 48, 43, 0.28);
-  backdrop-filter: blur(4px);
-  z-index: 3;
-}
-#win.hidden,
-.hidden {
-  display: none !important;
-}
-
-#win-card {
-  background: var(--card);
-  border-radius: 24px;
-  padding: 40px 52px;
-  text-align: center;
-  box-shadow:
-    0 24px 60px rgba(51, 48, 43, 0.3),
-    0 2px 0 rgba(255, 255, 255, 0.6) inset;
-  animation: pop 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
-}
-@keyframes pop {
-  from {
-    transform: scale(0.7);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
+/* --- win celebration ----------------------------------------------------------- */
 
 #win-title {
   font-size: 36px;
   font-weight: 800;
   letter-spacing: 4px;
   color: var(--ink);
+  text-shadow: 0 3px 0 var(--title-shadow);
 }
 #win-stars {
   font-size: 40px;
@@ -613,8 +757,8 @@ body::after {
 #win-buttons {
   margin-top: 24px;
   display: flex;
+  flex-direction: column;
   gap: 12px;
-  justify-content: center;
 }
 
 .confetti {
@@ -629,5 +773,84 @@ body::after {
 @keyframes confetti-fall {
   to {
     transform: translateY(110vh) rotate(720deg);
+  }
+}
+
+/* short viewports: compact the hero so it never spills under the sheet */
+@media (max-height: 760px) {
+  #menu-hero .logo-img {
+    width: 76px;
+    height: 76px;
+    margin-bottom: 4px;
+  }
+  #menu-title {
+    margin-top: 4px;
+    font-size: 36px;
+    letter-spacing: 6px;
+  }
+  #play-btn {
+    margin-top: 16px;
+  }
+  #howto-btn {
+    margin-top: 10px;
+  }
+}
+
+/* --- small screens (phones) ---------------------------------------------------- */
+
+@media (max-width: 700px) {
+  #menu-title {
+    font-size: 38px;
+    letter-spacing: 6px;
+  }
+  #level-sheet {
+    border-radius: 30px 30px 0 0;
+    padding: 24px 12px calc(14px + env(safe-area-inset-bottom));
+  }
+  #level-grid {
+    gap: 7px;
+  }
+  .lvl {
+    font-size: 17px;
+    padding: 8px 0 6px;
+    border-radius: 13px;
+  }
+  #plaque {
+    max-width: calc(100vw - 148px);
+    padding: 7px 16px 4px;
+  }
+  #level-name {
+    font-size: 17px;
+  }
+  #stats {
+    font-size: 13px;
+  }
+  .card {
+    padding: 26px 22px;
+    border-radius: 26px;
+  }
+  #tut-title {
+    font-size: 25px;
+  }
+  #tut-body,
+  #intro-text {
+    font-size: 17px;
+  }
+  #intro-name {
+    font-size: 30px;
+  }
+  #win-title {
+    font-size: 30px;
+    letter-spacing: 3px;
+  }
+  #win-stars {
+    font-size: 36px;
+  }
+  #win-detail {
+    font-size: 16px;
+  }
+  #toast {
+    font-size: 16px;
+    padding: 11px 20px;
   }
 }

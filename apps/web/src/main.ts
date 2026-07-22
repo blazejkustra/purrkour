@@ -82,7 +82,7 @@ function buildLevelGrid() {
     b.disabled = !unlocked;
     const s = progress.stars(i);
     b.innerHTML = unlocked
-      ? `${i + 1}<span class="lvl-stars">${s > 0 ? "★".repeat(s) : ""}</span>`
+      ? `${i + 1}<span class="lvl-stars">${"★".repeat(s)}${"☆".repeat(3 - s)}</span>`
       : `${i + 1}<span class="lvl-stars need">${TIER_STARS[tier]}★</span>`;
     b.title = unlocked
       ? level.name
@@ -93,8 +93,7 @@ function buildLevelGrid() {
 }
 
 function updateLevelHud() {
-  el("level-name").textContent =
-    `${session.levelIndex + 1}. ${LEVELS[session.levelIndex].name}`;
+  el("level-name").textContent = LEVELS[session.levelIndex].name;
   el("par").textContent = `${LEVELS[session.levelIndex].par}`;
 }
 
