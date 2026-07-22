@@ -1,19 +1,19 @@
-import React from 'react';
+import React from "react";
 import {
   Pressable,
   type PressableProps,
   type StyleProp,
   type ViewStyle,
-} from 'react-native';
+} from "react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-} from 'react-native-reanimated';
+} from "react-native-reanimated";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-interface Props extends Omit<PressableProps, 'style'> {
+interface Props extends Omit<PressableProps, "style"> {
   style?: StyleProp<ViewStyle>;
   scaleTo?: number;
 }

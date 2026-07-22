@@ -1,12 +1,18 @@
-import React from 'react';
-import { StyleSheet, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
-import Animated, { Easing, ZoomIn } from 'react-native-reanimated';
-import { colors, radius } from '../src/theme.ts';
-import { tapHaptic } from '../src/sound.ts';
-import { BouncyPressable } from './BouncyPressable.tsx';
-import { PText } from './PText.tsx';
+import React from "react";
+import {
+  StyleSheet,
+  View,
+  type StyleProp,
+  type TextStyle,
+  type ViewStyle,
+} from "react-native";
+import Animated, { Easing, ZoomIn } from "react-native-reanimated";
+import { colors, radius } from "../src/theme.ts";
+import { tapHaptic } from "../src/sound.ts";
+import { BouncyPressable } from "./BouncyPressable.tsx";
+import { PText } from "./PText.tsx";
 
-type BtnVariant = 'card' | 'accent' | 'primary' | 'dark';
+type BtnVariant = "card" | "accent" | "primary" | "dark";
 
 const BTN_BG: Record<BtnVariant, string> = {
   card: colors.paperBtn,
@@ -16,15 +22,15 @@ const BTN_BG: Record<BtnVariant, string> = {
 };
 const BTN_INK: Record<BtnVariant, string> = {
   card: colors.ink,
-  accent: '#fff8f2',
-  primary: '#f5ede2',
+  accent: "#fff8f2",
+  primary: "#f5ede2",
   dark: colors.plaqueText,
 };
 
 export function Btn({
   label,
   onPress,
-  variant = 'card',
+  variant = "card",
   big = false,
   small = false,
   style,
@@ -48,7 +54,7 @@ export function Btn({
       style={[
         styles.btn,
         { backgroundColor: BTN_BG[variant] },
-        variant === 'card' && styles.btnOutlined,
+        variant === "card" && styles.btnOutlined,
         big && styles.btnBig,
         small && styles.btnSmall,
         style,
@@ -86,14 +92,14 @@ export function CardScreen({ children }: { children: React.ReactNode }) {
 
 const styles = StyleSheet.create({
   screen: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(46, 36, 26, 0.38)',
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(46, 36, 26, 0.38)",
     zIndex: 3,
   },
   card: {
@@ -101,11 +107,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     paddingVertical: 30,
     paddingHorizontal: 24,
-    alignItems: 'center',
-    width: '92%',
+    alignItems: "center",
+    width: "92%",
     maxWidth: 560,
-    maxHeight: '88%',
-    shadowColor: '#2b2016',
+    maxHeight: "88%",
+    shadowColor: "#2b2016",
     shadowOpacity: 0.35,
     shadowRadius: 30,
     shadowOffset: { width: 0, height: 14 },
@@ -115,9 +121,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.btn,
     paddingVertical: 13,
     paddingHorizontal: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#33302b',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#33302b",
     shadowOpacity: 0.2,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 7 },

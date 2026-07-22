@@ -261,7 +261,8 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
       const tz = cellZ(cell) - origin.z;
       const tLen = Math.hypot(tx, tz) || 1;
       // (a) released close to the target cell — the strongest signal
-      const near = 1 - Math.hypot(d.wx - cellX(cell), d.wz - cellZ(cell)) / 0.85;
+      const near =
+        1 - Math.hypot(d.wx - cellX(cell), d.wz - cellZ(cell)) / 0.85;
       // (b) dragged decisively TOWARD it (direction + at least 30% of the way)
       const dirR = rLen > 0.35 ? (rx * tx + rz * tz) / (rLen * tLen) : -1;
       const progress = (rx * tx + rz * tz) / (tLen * tLen);
@@ -467,7 +468,8 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
       dogDustAcc -= 0.03;
       // anywhere along the body length, hugging the ground at the paws
       const along = (Math.random() - 0.5) * 1.2;
-      const side = (Math.random() < 0.5 ? -1 : 1) * (0.14 + Math.random() * 0.1);
+      const side =
+        (Math.random() < 0.5 ? -1 : 1) * (0.14 + Math.random() * 0.1);
       spawnBurst(
         a.x + (dog.axis === "h" ? along : side),
         RAISED_H,
@@ -594,10 +596,7 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
   function pointerMove(px: number, py: number, now: number) {
     if (!active || anim || won || !drag) return;
     // live drag: follow the pointer once it travels past a small threshold
-    if (
-      !drag.active &&
-      Math.hypot(px - drag.startPx, py - drag.startPy) > 7
-    ) {
+    if (!drag.active && Math.hypot(px - drag.startPx, py - drag.startPy) > 7) {
       drag.active = true;
     }
     const hit = renderer.pickGround(px, py, TILE_H);
@@ -691,7 +690,13 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
     if (hint && now >= hint.until) hint = null;
     const tray = renderer.instances("tray");
     tray.length = 0;
-    tray.push({ pos: [0, -0.3, 0], rot: 0, scl: [1, 1, 1], tint: TRAY, glow: 0 });
+    tray.push({
+      pos: [0, -0.3, 0],
+      rot: 0,
+      scl: [1, 1, 1],
+      tint: TRAY,
+      glow: 0,
+    });
     // round rug under the board: rust border ring + warm inner disc
     const rug = renderer.instances("rug");
     rug.length = 0;
@@ -728,7 +733,11 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
       yarn.push({
         pos: [y.x, -0.335 + hop, y.z],
         rot: y.baseRot + spin + 0.05 * Math.sin(now * 0.8 + i * 2),
-        scl: [y.s * (2 - squash) * 0.94, y.s * squash, y.s * (2 - squash) * 0.94],
+        scl: [
+          y.s * (2 - squash) * 0.94,
+          y.s * squash,
+          y.s * (2 - squash) * 0.94,
+        ],
         tint: y.tint,
         glow: 0,
       });
@@ -784,7 +793,8 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
     crates.length = 0;
     const pots = renderer.instances("pot");
     pots.length = 0;
-    for (const kind of [0, 1, 2]) renderer.instances(`foliage${kind}`).length = 0;
+    for (const kind of [0, 1, 2])
+      renderer.instances(`foliage${kind}`).length = 0;
     /** Pot stays put; only the foliage rustles. Same origin, same scale.
      * The plant variety is picked deterministically from the cell. */
     const plantAt = (
@@ -876,7 +886,9 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
       } else {
         // idle breathing; happy victory hops once every cat is home
         const breathe = 1 + 0.02 * Math.sin(now * 2.3 + cat.id * 2.1);
-        const hop = won ? 0.1 * Math.abs(Math.sin(now * 4.2 + cat.id * 1.4)) : 0;
+        const hop = won
+          ? 0.1 * Math.abs(Math.sin(now * 4.2 + cat.id * 1.4))
+          : 0;
         list.push({
           pos: [
             cellX(cat.cell),
@@ -898,7 +910,8 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
       // alternate breeds: first dog is the dachshund, second the corgi
       const dogs = renderer.instances(`dog${dog.id % 2}`);
       const a = animLift("dog", dog.id, now);
-      const dragging = drag?.active && drag.kind === "dog" && drag.id === dog.id;
+      const dragging =
+        drag?.active && drag.kind === "dog" && drag.id === dog.id;
       const dc = dragging && drag ? dragDogCenter(dog, drag) : null;
       const [c1] = dogCells(dog);
       const cx = dc ? dc.x : a ? a.x : cellX(c1) + (dog.axis === "h" ? 0.5 : 0);

@@ -4,7 +4,7 @@
  * the animal pieces are hand-built here; tiles get real chamfered edges
  * instead of raw boxes.
  */
-import type { MeshData } from './gltf.ts';
+import type { MeshData } from "./gltf.ts";
 
 export type Rgb = [number, number, number];
 
@@ -15,7 +15,11 @@ class MeshBuilder {
   private idx: number[] = [];
 
   /** One flat quad from 4 CCW corners with a shared normal. */
-  quad(corners: [number, number, number][], n: [number, number, number], color: Rgb) {
+  quad(
+    corners: [number, number, number][],
+    n: [number, number, number],
+    color: Rgb,
+  ) {
     const base = this.pos.length / 3;
     for (const c of corners) {
       this.pos.push(...c);
@@ -26,23 +30,93 @@ class MeshBuilder {
   }
 
   /** Axis-aligned box centered at (cx, cy, cz) with FULL sizes sx/sy/sz. */
-  box(cx: number, cy: number, cz: number, sx: number, sy: number, sz: number, color: Rgb) {
+  box(
+    cx: number,
+    cy: number,
+    cz: number,
+    sx: number,
+    sy: number,
+    sz: number,
+    color: Rgb,
+  ) {
     const x0 = cx - sx / 2;
     const x1 = cx + sx / 2;
     const y0 = cy - sy / 2;
     const y1 = cy + sy / 2;
     const z0 = cz - sz / 2;
     const z1 = cz + sz / 2;
-    this.quad([[x0, y1, z0], [x0, y1, z1], [x1, y1, z1], [x1, y1, z0]], [0, 1, 0], color);
-    this.quad([[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]], [0, -1, 0], color);
-    this.quad([[x1, y0, z0], [x1, y1, z0], [x1, y1, z1], [x1, y0, z1]], [1, 0, 0], color);
-    this.quad([[x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0]], [-1, 0, 0], color);
-    this.quad([[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]], [0, 0, 1], color);
-    this.quad([[x0, y0, z0], [x0, y1, z0], [x1, y1, z0], [x1, y0, z0]], [0, 0, -1], color);
+    this.quad(
+      [
+        [x0, y1, z0],
+        [x0, y1, z1],
+        [x1, y1, z1],
+        [x1, y1, z0],
+      ],
+      [0, 1, 0],
+      color,
+    );
+    this.quad(
+      [
+        [x0, y0, z0],
+        [x1, y0, z0],
+        [x1, y0, z1],
+        [x0, y0, z1],
+      ],
+      [0, -1, 0],
+      color,
+    );
+    this.quad(
+      [
+        [x1, y0, z0],
+        [x1, y1, z0],
+        [x1, y1, z1],
+        [x1, y0, z1],
+      ],
+      [1, 0, 0],
+      color,
+    );
+    this.quad(
+      [
+        [x0, y0, z0],
+        [x0, y0, z1],
+        [x0, y1, z1],
+        [x0, y1, z0],
+      ],
+      [-1, 0, 0],
+      color,
+    );
+    this.quad(
+      [
+        [x0, y0, z1],
+        [x1, y0, z1],
+        [x1, y1, z1],
+        [x0, y1, z1],
+      ],
+      [0, 0, 1],
+      color,
+    );
+    this.quad(
+      [
+        [x0, y0, z0],
+        [x0, y1, z0],
+        [x1, y1, z0],
+        [x1, y0, z0],
+      ],
+      [0, 0, -1],
+      color,
+    );
   }
 
   /** Square-based pyramid (cat ears): base center (cx, cy, cz), apex up. */
-  pyramid(cx: number, cy: number, cz: number, sx: number, sz: number, h: number, color: Rgb) {
+  pyramid(
+    cx: number,
+    cy: number,
+    cz: number,
+    sx: number,
+    sz: number,
+    h: number,
+    color: Rgb,
+  ) {
     const x0 = cx - sx / 2;
     const x1 = cx + sx / 2;
     const z0 = cz - sz / 2;
@@ -60,7 +134,11 @@ class MeshBuilder {
       // face normal from the two edges
       const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
       const v = [apex[0] - a[0], apex[1] - a[1], apex[2] - a[2]];
-      let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+      let n = [
+        u[1] * v[2] - u[2] * v[1],
+        u[2] * v[0] - u[0] * v[2],
+        u[0] * v[1] - u[1] * v[0],
+      ];
       const len = Math.hypot(n[0], n[1], n[2]) || 1;
       n = [n[0] / len, n[1] / len, n[2] / len];
       for (const p of [a, b, apex]) {
@@ -78,7 +156,14 @@ class MeshBuilder {
 
   /** Box with a 45° chamfer around the top edge: footprint w×d at y=0,
    * straight sides to h-c, then slanting in to a (w-2c)×(d-2c) top at h. */
-  chamferBox(w: number, h: number, d: number, c: number, color: Rgb, topColor: Rgb = color) {
+  chamferBox(
+    w: number,
+    h: number,
+    d: number,
+    c: number,
+    color: Rgb,
+    topColor: Rgb = color,
+  ) {
     const x0 = -w / 2;
     const x1 = w / 2;
     const z0 = -d / 2;
@@ -89,18 +174,108 @@ class MeshBuilder {
     const iz0 = z0 + c;
     const iz1 = z1 - c;
     const s = Math.SQRT1_2;
-    this.quad([[ix0, h, iz0], [ix0, h, iz1], [ix1, h, iz1], [ix1, h, iz0]], [0, 1, 0], topColor);
-    this.quad([[x0, 0, z0], [x1, 0, z0], [x1, 0, z1], [x0, 0, z1]], [0, -1, 0], color);
+    this.quad(
+      [
+        [ix0, h, iz0],
+        [ix0, h, iz1],
+        [ix1, h, iz1],
+        [ix1, h, iz0],
+      ],
+      [0, 1, 0],
+      topColor,
+    );
+    this.quad(
+      [
+        [x0, 0, z0],
+        [x1, 0, z0],
+        [x1, 0, z1],
+        [x0, 0, z1],
+      ],
+      [0, -1, 0],
+      color,
+    );
     // sides
-    this.quad([[x1, 0, z0], [x1, y1, z0], [x1, y1, z1], [x1, 0, z1]], [1, 0, 0], color);
-    this.quad([[x0, 0, z0], [x0, 0, z1], [x0, y1, z1], [x0, y1, z0]], [-1, 0, 0], color);
-    this.quad([[x0, 0, z1], [x1, 0, z1], [x1, y1, z1], [x0, y1, z1]], [0, 0, 1], color);
-    this.quad([[x0, 0, z0], [x0, y1, z0], [x1, y1, z0], [x1, 0, z0]], [0, 0, -1], color);
+    this.quad(
+      [
+        [x1, 0, z0],
+        [x1, y1, z0],
+        [x1, y1, z1],
+        [x1, 0, z1],
+      ],
+      [1, 0, 0],
+      color,
+    );
+    this.quad(
+      [
+        [x0, 0, z0],
+        [x0, 0, z1],
+        [x0, y1, z1],
+        [x0, y1, z0],
+      ],
+      [-1, 0, 0],
+      color,
+    );
+    this.quad(
+      [
+        [x0, 0, z1],
+        [x1, 0, z1],
+        [x1, y1, z1],
+        [x0, y1, z1],
+      ],
+      [0, 0, 1],
+      color,
+    );
+    this.quad(
+      [
+        [x0, 0, z0],
+        [x0, y1, z0],
+        [x1, y1, z0],
+        [x1, 0, z0],
+      ],
+      [0, 0, -1],
+      color,
+    );
     // chamfer ring
-    this.quad([[x1, y1, z0], [ix1, h, iz0], [ix1, h, iz1], [x1, y1, z1]], [s, s, 0], topColor);
-    this.quad([[x0, y1, z0], [x0, y1, z1], [ix0, h, iz1], [ix0, h, iz0]], [-s, s, 0], topColor);
-    this.quad([[x0, y1, z1], [x1, y1, z1], [ix1, h, iz1], [ix0, h, iz1]], [0, s, s], topColor);
-    this.quad([[x0, y1, z0], [ix0, h, iz0], [ix1, h, iz0], [x1, y1, z0]], [0, s, -s], topColor);
+    this.quad(
+      [
+        [x1, y1, z0],
+        [ix1, h, iz0],
+        [ix1, h, iz1],
+        [x1, y1, z1],
+      ],
+      [s, s, 0],
+      topColor,
+    );
+    this.quad(
+      [
+        [x0, y1, z0],
+        [x0, y1, z1],
+        [ix0, h, iz1],
+        [ix0, h, iz0],
+      ],
+      [-s, s, 0],
+      topColor,
+    );
+    this.quad(
+      [
+        [x0, y1, z1],
+        [x1, y1, z1],
+        [ix1, h, iz1],
+        [ix0, h, iz1],
+      ],
+      [0, s, s],
+      topColor,
+    );
+    this.quad(
+      [
+        [x0, y1, z0],
+        [ix0, h, iz0],
+        [ix1, h, iz0],
+        [x1, y1, z0],
+      ],
+      [0, s, -s],
+      topColor,
+    );
   }
 
   build(): MeshData {
@@ -367,8 +542,16 @@ export function cardboardBoxMesh(): MeshData {
     B: [number, number, number],
     D: [number, number, number],
   ) => {
-    const C: [number, number, number] = [B[0] + D[0] * out, B[1] - drop, B[2] + D[2] * out];
-    const E: [number, number, number] = [A[0] + D[0] * out, A[1] - drop, A[2] + D[2] * out];
+    const C: [number, number, number] = [
+      B[0] + D[0] * out,
+      B[1] - drop,
+      B[2] + D[2] * out,
+    ];
+    const E: [number, number, number] = [
+      A[0] + D[0] * out,
+      A[1] - drop,
+      A[2] + D[2] * out,
+    ];
     // face normal ≈ outward-tilted up
     const n: [number, number, number] = [
       D[0] * Math.sin(0.6),
@@ -382,7 +565,11 @@ export function cardboardBoxMesh(): MeshData {
       p[1] - n[1] * o,
       p[2] - n[2] * o,
     ];
-    b.quad([lower(E), lower(C), lower(B), lower(A)], [-n[0], -n[1], -n[2]], kraftDark);
+    b.quad(
+      [lower(E), lower(C), lower(B), lower(A)],
+      [-n[0], -n[1], -n[2]],
+      kraftDark,
+    );
   };
   flap([-half, H, half], [half, H, half], [0, 0, 1]); // front (+z)
   flap([half, H, -half], [-half, H, -half], [0, 0, -1]); // back

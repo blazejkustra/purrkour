@@ -4,18 +4,25 @@
  * slice it needs). Haptics ride the same SFX events via react-native-pulsar
  * presets — every sound the session emits is offered to the motor too.
  */
-import { AudioContext, AudioManager } from 'react-native-audio-api';
-import { HapticSupport, Presets, Settings as PulsarSettings } from 'react-native-pulsar';
+import { AudioContext, AudioManager } from "react-native-audio-api";
+import {
+  HapticSupport,
+  Presets,
+  Settings as PulsarSettings,
+} from "react-native-pulsar";
 import {
   createAudio,
   type AudioContextLike,
   type SfxId,
-} from '@purrkour/engine/audio.ts';
+} from "@purrkour/engine/audio.ts";
 
 try {
   // game audio keeps playing with the ringer switch on silent; the motor
   // must stay allowed while the audio session is active
-  AudioManager.setAudioSessionOptions({ iosCategory: 'playback', iosAllowHaptics: true });
+  AudioManager.setAudioSessionOptions({
+    iosCategory: "playback",
+    iosAllowHaptics: true,
+  });
 } catch {
   // older audio-api or missing native module — defaults are fine
 }
@@ -26,7 +33,8 @@ export const audio = createAudio(
 
 let hapticsOn = false;
 try {
-  hapticsOn = PulsarSettings.getHapticsSupportLevel() !== HapticSupport.NO_SUPPORT;
+  hapticsOn =
+    PulsarSettings.getHapticsSupportLevel() !== HapticSupport.NO_SUPPORT;
   // presets can carry a sound layer on some platforms — audio is ours alone
   PulsarSettings.enableSound(false);
   PulsarSettings.enableCache(true);

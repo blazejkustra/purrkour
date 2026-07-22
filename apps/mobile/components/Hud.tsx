@@ -5,26 +5,32 @@
  * clay hint bulb alone on the right. All chrome sits on walnut/paper
  * surfaces so it keeps contrast over the warm room.
  */
-import React, { type ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LEVELS } from '@purrkour/engine/game/levels.ts';
-import { colors } from '../src/theme.ts';
-import { tapHaptic } from '../src/sound.ts';
-import { BouncyPressable } from './BouncyPressable.tsx';
-import { PText } from './PText.tsx';
-import { HintIcon, HomeIcon, MusicIcon, ResetIcon, UndoIcon } from './icons.tsx';
+import React, { type ReactNode } from "react";
+import { StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { LEVELS } from "@purrkour/engine/game/levels.ts";
+import { colors } from "../src/theme.ts";
+import { tapHaptic } from "../src/sound.ts";
+import { BouncyPressable } from "./BouncyPressable.tsx";
+import { PText } from "./PText.tsx";
+import {
+  HintIcon,
+  HomeIcon,
+  MusicIcon,
+  ResetIcon,
+  UndoIcon,
+} from "./icons.tsx";
 
 /** Round floating icon button. */
 function IconFab({
   size = 56,
-  variant = 'paper',
+  variant = "paper",
   label,
   onPress,
   children,
 }: {
   size?: number;
-  variant?: 'paper' | 'walnut' | 'clay';
+  variant?: "paper" | "walnut" | "clay";
   label: string;
   onPress: () => void;
   children: ReactNode;
@@ -41,9 +47,9 @@ function IconFab({
       style={[
         styles.fab,
         { width: size, height: size, borderRadius: size / 2 },
-        variant === 'paper' && styles.fabPaper,
-        variant === 'walnut' && styles.fabWalnut,
-        variant === 'clay' && styles.fabClay,
+        variant === "paper" && styles.fabPaper,
+        variant === "walnut" && styles.fabWalnut,
+        variant === "clay" && styles.fabClay,
       ]}
     >
       {children}
@@ -97,12 +103,12 @@ export function Hud({
         <IconFab
           size={48}
           variant="walnut"
-          label={musicOn ? 'Music on' : 'Music off'}
+          label={musicOn ? "Music on" : "Music off"}
           onPress={onMusic}
         >
           <MusicIcon
             size={24}
-            color={musicOn ? colors.plaqueText : 'rgba(255, 243, 221, 0.55)'}
+            color={musicOn ? colors.plaqueText : "rgba(255, 243, 221, 0.55)"}
             muted={!musicOn}
             slashColor={colors.terracotta}
           />
@@ -118,7 +124,9 @@ export function Hud({
           <ResetIcon size={26} color={colors.ink} />
         </IconFab>
       </View>
-      <View style={[styles.bottomRight, { bottom, right: side + insets.right }]}>
+      <View
+        style={[styles.bottomRight, { bottom, right: side + insets.right }]}
+      >
         <IconFab size={68} variant="clay" label="Show hint" onPress={onHint}>
           <HintIcon size={34} color="#fff6ea" />
         </IconFab>
@@ -129,20 +137,20 @@ export function Hud({
 
 const styles = StyleSheet.create({
   topRow: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
-    alignItems: 'center',
+    alignItems: "center",
   },
-  slot: { position: 'absolute' },
+  slot: { position: "absolute" },
   plaque: {
     backgroundColor: colors.walnut,
     borderRadius: 18,
     paddingVertical: 6,
     paddingHorizontal: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#2b2016',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#2b2016",
     shadowOpacity: 0.25,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
@@ -160,15 +168,15 @@ const styles = StyleSheet.create({
     color: colors.plaqueSoft,
   },
   bottomLeft: {
-    position: 'absolute',
-    flexDirection: 'row',
+    position: "absolute",
+    flexDirection: "row",
     gap: 12,
   },
-  bottomRight: { position: 'absolute' },
+  bottomRight: { position: "absolute" },
   fab: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#33302b',
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#33302b",
     shadowOpacity: 0.22,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },

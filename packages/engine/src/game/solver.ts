@@ -4,7 +4,14 @@
  * interchangeable for the win condition, so states dedupe on the SORTED cat
  * cell set; dogs dedupe on (axis, anchor) sorted.
  */
-import { type GameState, type Move, allMoves, applyMove, isWon, undo } from './model.ts';
+import {
+  type GameState,
+  type Move,
+  allMoves,
+  applyMove,
+  isWon,
+  undo,
+} from "./model.ts";
 
 export interface Solution {
   minMoves: number;
@@ -14,7 +21,7 @@ export interface Solution {
 const stateKey = (s: GameState): string => {
   const cats = s.cats.map((c) => c.cell).sort((a, b) => a - b);
   const dogs = s.dogs.map((d) => `${d.axis}${d.cell}`).sort();
-  return `${cats.join(',')}|${dogs.join(',')}`;
+  return `${cats.join(",")}|${dogs.join(",")}`;
 };
 
 /** Breadth-first search; returns null when unsolvable within `maxStates`. */
@@ -55,8 +62,9 @@ export function solve(s: GameState, maxStates = 500_000): Solution | null {
         }
         return null;
       });
-      if (result && 'done' in result && result.done) return { minMoves: depth, line: result.done };
-      if (result && 'overflow' in result) return null;
+      if (result && "done" in result && result.done)
+        return { minMoves: depth, line: result.done };
+      if (result && "overflow" in result) return null;
     }
     frontier = next;
   }

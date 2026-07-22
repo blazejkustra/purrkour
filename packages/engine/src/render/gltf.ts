@@ -22,7 +22,12 @@ const COMPONENT_ARRAYS = {
   5126: Float32Array,
 } as const;
 
-const TYPE_COMPONENTS: Record<string, number> = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4 };
+const TYPE_COMPONENTS: Record<string, number> = {
+  SCALAR: 1,
+  VEC2: 2,
+  VEC3: 3,
+  VEC4: 4,
+};
 
 // oxlint-disable-next-line typescript/no-explicit-any
 type Json = any;
@@ -32,15 +37,19 @@ type FetchLike = (
   url: string,
 ) => Promise<{ json(): Promise<unknown>; arrayBuffer(): Promise<ArrayBuffer> }>;
 
-export async function loadMesh(url: string, fetchImpl: FetchLike): Promise<MeshData> {
+export async function loadMesh(
+  url: string,
+  fetchImpl: FetchLike,
+): Promise<MeshData> {
   const json: Json = await (await fetchImpl(url)).json();
   const binUri: string = json.buffers[0].uri;
-  const base = url.slice(0, url.lastIndexOf('/') + 1);
+  const base = url.slice(0, url.lastIndexOf("/") + 1);
   const bin = await (await fetchImpl(base + binUri)).arrayBuffer();
 
   const accessor = (i: number) => {
     const acc = json.accessors[i];
-    const Arr = COMPONENT_ARRAYS[acc.componentType as keyof typeof COMPONENT_ARRAYS];
+    const Arr =
+      COMPONENT_ARRAYS[acc.componentType as keyof typeof COMPONENT_ARRAYS];
     const comps = TYPE_COMPONENTS[acc.type];
     const bv = json.bufferViews[acc.bufferView];
     const offset = (bv.byteOffset ?? 0) + (acc.byteOffset ?? 0);
@@ -78,7 +87,10 @@ export async function loadMesh(url: string, fetchImpl: FetchLike): Promise<MeshD
     }
   }
 
-  const concat = <T extends Float32Array | Uint32Array>(parts: T[], Ctor: new (n: number) => T) => {
+  const concat = <T extends Float32Array | Uint32Array>(
+    parts: T[],
+    Ctor: new (n: number) => T,
+  ) => {
     const out = new Ctor(parts.reduce((s, a) => s + a.length, 0));
     let off = 0;
     for (const a of parts) {
@@ -98,13 +110,64 @@ export async function loadMesh(url: string, fetchImpl: FetchLike): Promise<MeshD
 /** Axis-aligned box: x/z centered [-0.5, 0.5], y in [0, 1]. Face normals,
  * constant UV (meant for the white texture + per-instance tints). */
 export function boxMesh(): MeshData {
-  const faces: { n: [number, number, number]; corners: [number, number, number][] }[] = [
-    { n: [0, 1, 0], corners: [[-0.5, 1, -0.5], [-0.5, 1, 0.5], [0.5, 1, 0.5], [0.5, 1, -0.5]] },
-    { n: [0, -1, 0], corners: [[-0.5, 0, -0.5], [0.5, 0, -0.5], [0.5, 0, 0.5], [-0.5, 0, 0.5]] },
-    { n: [1, 0, 0], corners: [[0.5, 0, -0.5], [0.5, 1, -0.5], [0.5, 1, 0.5], [0.5, 0, 0.5]] },
-    { n: [-1, 0, 0], corners: [[-0.5, 0, -0.5], [-0.5, 0, 0.5], [-0.5, 1, 0.5], [-0.5, 1, -0.5]] },
-    { n: [0, 0, 1], corners: [[-0.5, 0, 0.5], [0.5, 0, 0.5], [0.5, 1, 0.5], [-0.5, 1, 0.5]] },
-    { n: [0, 0, -1], corners: [[-0.5, 0, -0.5], [-0.5, 1, -0.5], [0.5, 1, -0.5], [0.5, 0, -0.5]] },
+  const faces: {
+    n: [number, number, number];
+    corners: [number, number, number][];
+  }[] = [
+    {
+      n: [0, 1, 0],
+      corners: [
+        [-0.5, 1, -0.5],
+        [-0.5, 1, 0.5],
+        [0.5, 1, 0.5],
+        [0.5, 1, -0.5],
+      ],
+    },
+    {
+      n: [0, -1, 0],
+      corners: [
+        [-0.5, 0, -0.5],
+        [0.5, 0, -0.5],
+        [0.5, 0, 0.5],
+        [-0.5, 0, 0.5],
+      ],
+    },
+    {
+      n: [1, 0, 0],
+      corners: [
+        [0.5, 0, -0.5],
+        [0.5, 1, -0.5],
+        [0.5, 1, 0.5],
+        [0.5, 0, 0.5],
+      ],
+    },
+    {
+      n: [-1, 0, 0],
+      corners: [
+        [-0.5, 0, -0.5],
+        [-0.5, 0, 0.5],
+        [-0.5, 1, 0.5],
+        [-0.5, 1, -0.5],
+      ],
+    },
+    {
+      n: [0, 0, 1],
+      corners: [
+        [-0.5, 0, 0.5],
+        [0.5, 0, 0.5],
+        [0.5, 1, 0.5],
+        [-0.5, 1, 0.5],
+      ],
+    },
+    {
+      n: [0, 0, -1],
+      corners: [
+        [-0.5, 0, -0.5],
+        [-0.5, 1, -0.5],
+        [0.5, 1, -0.5],
+        [0.5, 0, -0.5],
+      ],
+    },
   ];
   const positions = new Float32Array(6 * 4 * 3);
   const normals = new Float32Array(6 * 4 * 3);

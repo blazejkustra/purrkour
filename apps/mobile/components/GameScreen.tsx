@@ -4,29 +4,29 @@
  * routing into the shared engine session, and toast/HUD chrome. The game
  * itself lives in @purrkour/engine.
  */
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, Image, PixelRatio, StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { Canvas, type CanvasRef } from 'react-native-webgpu';
-import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useKeepAwake } from 'expo-keep-awake';
-import type { TgpuRoot } from 'typegpu';
-import { createRenderer } from '@purrkour/engine/render/renderer.ts';
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { AppState, Image, PixelRatio, StyleSheet, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { Canvas, type CanvasRef } from "react-native-webgpu";
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useKeepAwake } from "expo-keep-awake";
+import type { TgpuRoot } from "typegpu";
+import { createRenderer } from "@purrkour/engine/render/renderer.ts";
 import {
   cellX,
   cellZ,
   createSession,
   registerGameBatches,
   type Session,
-} from '@purrkour/engine/game/session.ts';
-import { createProgress, starsFor } from '@purrkour/engine/game/progress.ts';
-import { LEVELS } from '@purrkour/engine/game/levels.ts';
-import { storage } from '../src/storage.ts';
-import { audio, playSfx } from '../src/sound.ts';
-import { colors } from '../src/theme.ts';
-import { Hud } from './Hud.tsx';
-import { PText } from './PText.tsx';
+} from "@purrkour/engine/game/session.ts";
+import { createProgress, starsFor } from "@purrkour/engine/game/progress.ts";
+import { LEVELS } from "@purrkour/engine/game/levels.ts";
+import { storage } from "../src/storage.ts";
+import { audio, playSfx } from "../src/sound.ts";
+import { colors } from "../src/theme.ts";
+import { Hud } from "./Hud.tsx";
+import { PText } from "./PText.tsx";
 import {
   IntroScreen,
   MenuScreen,
@@ -34,12 +34,12 @@ import {
   TutorialScreen,
   WinScreen,
   type WinInfo,
-} from './screens.tsx';
+} from "./screens.tsx";
 
 const progress = createProgress(storage);
-const logo = require('../assets/splash-icon.png');
+const logo = require("../assets/splash-icon.png");
 
-type Ui = 'loading' | 'menu' | 'tutorial' | 'intro' | 'play';
+type Ui = "loading" | "menu" | "tutorial" | "intro" | "play";
 
 // Hermes provides performance.now(); the DOM-less lib config doesn't type it.
 declare const performance: { now(): number };
@@ -92,7 +92,7 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
   // the native canvas whose width/height set the drawing-buffer size (px)
   const nativeCanvas = useRef<{ width: number; height: number } | null>(null);
 
-  const [ui, setUi] = useState<Ui>('loading');
+  const [ui, setUi] = useState<Ui>("loading");
   const [fatal, setFatal] = useState<string | null>(null);
   const [levelIndex, setLevelIndex] = useState(0);
   const [moves, setMoves] = useState(0);
@@ -110,8 +110,8 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
   };
 
   useEffect(() => {
-    const sub = AppState.addEventListener('change', (s) => {
-      foreground.current = s === 'active';
+    const sub = AppState.addEventListener("change", (s) => {
+      foreground.current = s === "active";
     });
     return () => {
       sub.remove();
@@ -121,7 +121,9 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
   }, []);
 
   // Boot once the surface has a layout (getBoundingClientRect is valid then).
-  const onLayout = (event: { nativeEvent: { layout: { width: number; height: number } } }) => {
+  const onLayout = (event: {
+    nativeEvent: { layout: { width: number; height: number } };
+  }) => {
     const { width, height } = event.nativeEvent.layout;
     surface.clientWidth = Math.max(1, width);
     surface.clientHeight = Math.max(1, height);
@@ -135,10 +137,11 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
     if (booting.current || !canvasRef.current) return;
     booting.current = true;
     try {
-      const context = canvasRef.current.getContext('webgpu');
-      if (!context) throw new Error('WebGPU canvas context unavailable');
-      const canvas = (context as unknown as { canvas: { width: number; height: number } })
-        .canvas;
+      const context = canvasRef.current.getContext("webgpu");
+      if (!context) throw new Error("WebGPU canvas context unavailable");
+      const canvas = (
+        context as unknown as { canvas: { width: number; height: number } }
+      ).canvas;
       canvas.width = Math.max(1, Math.round(surface.clientWidth * dpr));
       canvas.height = Math.max(1, Math.round(surface.clientHeight * dpr));
       nativeCanvas.current = canvas;
@@ -160,10 +163,13 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
         onWin({ levelIndex: level, moves: m, par, hintsUsed }) {
           const rowUnlocked = progress.recordWin(level, m);
           const hintNote =
-            hintsUsed > 0 ? ` · ${hintsUsed} hint${hintsUsed > 1 ? 's' : ''}` : '';
+            hintsUsed > 0
+              ? ` · ${hintsUsed} hint${hintsUsed > 1 ? "s" : ""}`
+              : "";
           setTimeout(() => {
             setWin({
-              title: level === LEVELS.length - 1 ? 'CHAMPION NAPPER!' : 'PURRFECT!',
+              title:
+                level === LEVELS.length - 1 ? "CHAMPION NAPPER!" : "PURRFECT!",
               stars: starsFor(par, m),
               detail:
                 (m <= par
@@ -171,17 +177,17 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
                   : `Solved in ${m} (best is ${par})`) + hintNote,
               hasNext: level < LEVELS.length - 1,
             });
-            playSfx('win');
-            if (rowUnlocked) showToast('New row of levels unlocked!', 3200);
+            playSfx("win");
+            if (rowUnlocked) showToast("New row of levels unlocked!", 3200);
           }, 350);
         },
         onHintShown(minMoves, kind) {
           showToast(
-            `Try the glowing ${kind} — ${minMoves} move${minMoves > 1 ? 's' : ''} to go!`,
+            `Try the glowing ${kind} — ${minMoves} move${minMoves > 1 ? "s" : ""} to go!`,
           );
         },
         onHintUnavailable() {
-          showToast('No way to win from here — undo or reset!');
+          showToast("No way to win from here — undo or reset!");
         },
       });
       session.loadLevel(0);
@@ -193,7 +199,8 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
       (globalThis as unknown as Record<string, unknown>).__purrkour = {
         cellScreen: (cell: number, h = 0.3) =>
           renderer.project(cellX(cell), h, cellZ(cell)),
-        worldScreen: (x: number, y: number, z: number) => renderer.project(x, y, z),
+        worldScreen: (x: number, y: number, z: number) =>
+          renderer.project(x, y, z),
         state: () => ({
           cats: session.state.cats.map((c) => ({ ...c })),
           dogs: session.state.dogs.map((dg) => ({ ...dg })),
@@ -224,7 +231,7 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
 
       setMusicOn(progress.musicWanted);
       if (progress.musicWanted) audio.startMusic();
-      setUi('menu');
+      setUi("menu");
     } catch (err) {
       console.error(err instanceof Error ? (err.stack ?? err.message) : err);
       setFatal(err instanceof Error ? err.message : String(err));
@@ -270,24 +277,24 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
   const toMenu = () => {
     setWin(null);
     sessionRef.current?.setActive(false);
-    setUi('menu');
+    setUi("menu");
   };
   const showIntro = (i: number) => {
     session().loadLevel(i); // board renders behind the card
     setLevelIndex(i);
     setWin(null);
     session().setActive(false);
-    setUi('intro');
+    setUi("intro");
   };
   const startPlay = () => {
     session().setActive(true);
-    setUi('play');
+    setUi("play");
     audioGesture();
   };
   const openTutorial = (then: (() => void) | null) => {
     afterTutorial.current = then;
     setTutPage(0);
-    setUi('tutorial');
+    setUi("tutorial");
   };
   const tutorialNext = () => {
     if (tutPage < 3) {
@@ -313,8 +320,8 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
       </GestureDetector>
       <CozyLight />
 
-      {ui === 'play' && <KeepAwakeWhilePlaying />}
-      {ui === 'play' && (
+      {ui === "play" && <KeepAwakeWhilePlaying />}
+      {ui === "play" && (
         <Hud
           levelIndex={levelIndex}
           moves={moves}
@@ -332,7 +339,7 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
         />
       )}
 
-      {ui === 'menu' && (
+      {ui === "menu" && (
         <MenuScreen
           progress={progress}
           onPlay={() => {
@@ -344,14 +351,14 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
           onLevel={showIntro}
         />
       )}
-      {ui === 'tutorial' && (
+      {ui === "tutorial" && (
         <TutorialScreen
           page={tutPage}
           onBack={() => setTutPage(Math.max(0, tutPage - 1))}
           onNext={tutorialNext}
         />
       )}
-      {ui === 'intro' && (
+      {ui === "intro" && (
         <IntroScreen levelIndex={levelIndex} onMenu={toMenu} onGo={startPlay} />
       )}
       {win !== null && (
@@ -362,7 +369,7 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
             session().loadLevel(levelIndex);
             setWin(null);
             session().setActive(true);
-            setUi('play');
+            setUi("play");
           }}
           onNext={() => showIntro(Math.min(levelIndex + 1, LEVELS.length - 1))}
         />
@@ -372,7 +379,7 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
         <Toast message={toastMsg} bottom={106 + insets.bottom} />
       )}
 
-      {ui === 'loading' && !fatal && (
+      {ui === "loading" && !fatal && (
         <View style={[styles.overlay, styles.center]}>
           <Image source={logo} style={styles.loadLogo} />
           <PText weight="extraBold" style={styles.loadTitle}>
@@ -400,7 +407,7 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   overlay: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
@@ -408,7 +415,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.paper,
     zIndex: 5,
   },
-  center: { alignItems: 'center', justifyContent: 'center' },
+  center: { alignItems: "center", justifyContent: "center" },
   loadLogo: { width: 110, height: 110, marginBottom: 8 },
   loadTitle: {
     fontSize: 34,
@@ -422,7 +429,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 15,
     color: colors.inkSoft,
-    textAlign: 'center',
+    textAlign: "center",
     paddingHorizontal: 30,
   },
   fatalTitle: {

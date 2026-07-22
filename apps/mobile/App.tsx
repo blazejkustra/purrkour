@@ -1,19 +1,22 @@
 // Install native WebGPU eagerly so navigator.gpu exists before tgpu.init().
-import 'react-native-webgpu';
+import "react-native-webgpu";
 import {
   Baloo2_500Medium,
   Baloo2_600SemiBold,
   Baloo2_700Bold,
   Baloo2_800ExtraBold,
   useFonts,
-} from '@expo-google-fonts/baloo-2';
-import React, { useEffect, useState } from 'react';
-import { StatusBar, StyleSheet, Text, View } from 'react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { initialWindowMetrics, SafeAreaProvider } from 'react-native-safe-area-context';
-import tgpu, { type TgpuRoot } from 'typegpu';
-import { GameScreen } from './components/GameScreen.tsx';
-import { colors } from './src/theme.ts';
+} from "@expo-google-fonts/baloo-2";
+import React, { useEffect, useState } from "react";
+import { StatusBar, StyleSheet, Text, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+  initialWindowMetrics,
+  SafeAreaProvider,
+} from "react-native-safe-area-context";
+import tgpu, { type TgpuRoot } from "typegpu";
+import { GameScreen } from "./components/GameScreen.tsx";
+import { colors } from "./src/theme.ts";
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -32,7 +35,7 @@ export default function App() {
           // Dawn is NOT thread-safe without this toggle, and react-native-
           // webgpu's async event pump touches the device off the JS thread.
           // Cost is one uncontended mutex per API call.
-          dawnToggles: { enabledToggles: ['implicit_device_synchronization'] },
+          dawnToggles: { enabledToggles: ["implicit_device_synchronization"] },
         },
       })
       .then(
@@ -40,8 +43,11 @@ export default function App() {
           if (!disposed) setRoot(r);
         },
         (err) => {
-          console.error(err instanceof Error ? (err.stack ?? err.message) : err);
-          if (!disposed) setInitError(err instanceof Error ? err.message : String(err));
+          console.error(
+            err instanceof Error ? (err.stack ?? err.message) : err,
+          );
+          if (!disposed)
+            setInitError(err instanceof Error ? err.message : String(err));
         },
       );
     return () => {
@@ -70,18 +76,18 @@ export default function App() {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   fatal: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   fatalTitle: {
     color: colors.ink,
     fontSize: 24,
-    fontWeight: '800',
+    fontWeight: "800",
     letterSpacing: 2,
     marginBottom: 16,
   },
@@ -89,6 +95,6 @@ const styles = StyleSheet.create({
     color: colors.inkSoft,
     fontSize: 14,
     paddingHorizontal: 40,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

@@ -17,8 +17,8 @@ export const N = 5;
 export const CELLS = N * N;
 
 export type Cell = number; // 0..24
-export type CatColor = 'red' | 'blue' | 'violet' | 'yellow';
-export type Axis = 'h' | 'v';
+export type CatColor = "red" | "blue" | "violet" | "yellow";
+export type Axis = "h" | "v";
 
 export interface Cat {
   id: number;
@@ -44,8 +44,8 @@ export interface LevelDef {
 }
 
 export type Move =
-  | { kind: 'cat'; id: number; from: Cell; to: Cell }
-  | { kind: 'dog'; id: number; from: Cell; to: Cell };
+  | { kind: "cat"; id: number; from: Cell; to: Cell }
+  | { kind: "dog"; id: number; from: Cell; to: Cell };
 
 export interface GameState {
   cats: Cat[];
@@ -60,7 +60,10 @@ export const row = (c: Cell) => Math.floor(c / N);
 export const col = (c: Cell) => c % N;
 export const cellAt = (r: number, c: number) => r * N + c;
 
-export const dogCells = (d: Dog): [Cell, Cell] => [d.cell, d.cell + (d.axis === 'h' ? 1 : N)];
+export const dogCells = (d: Dog): [Cell, Cell] => [
+  d.cell,
+  d.cell + (d.axis === "h" ? 1 : N),
+];
 
 export function createState(def: LevelDef): GameState {
   const state: GameState = {
@@ -79,15 +82,17 @@ function validateLevel(s: GameState) {
   const seen = new Set<Cell>();
   const claim = (c: Cell, what: string) => {
     if (c < 0 || c >= CELLS) throw new Error(`${what} out of board: ${c}`);
-    if (seen.has(c)) throw new Error(`${what} overlaps another piece at cell ${c}`);
+    if (seen.has(c))
+      throw new Error(`${what} overlaps another piece at cell ${c}`);
     seen.add(c);
   };
-  for (const c of s.cushions) claim(c, 'cushion');
+  for (const c of s.cushions) claim(c, "cushion");
   for (const d of s.dogs) {
     const [a, b] = dogCells(d);
-    if (d.axis === 'h' && col(a) === N - 1) throw new Error('h-dog crosses row edge');
-    claim(a, 'dog');
-    claim(b, 'dog');
+    if (d.axis === "h" && col(a) === N - 1)
+      throw new Error("h-dog crosses row edge");
+    claim(a, "dog");
+    claim(b, "dog");
   }
   // boxes may coincide with a cat (pre-solved cat) but nothing else
   for (const b of s.boxes) {
@@ -96,12 +101,13 @@ function validateLevel(s: GameState) {
       throw new Error(`box under a solid piece at cell ${b}`);
     }
   }
-  for (const c of s.cats) claim(c.cell, 'cat');
+  for (const c of s.cats) claim(c.cell, "cat");
   for (const capped of s.cappedBoxes) {
-    if (!s.boxes.includes(capped)) throw new Error(`capped box ${capped} is not a box`);
+    if (!s.boxes.includes(capped))
+      throw new Error(`capped box ${capped} is not a box`);
   }
   const freeBoxes = s.boxes.filter((b) => !s.cappedBoxes.includes(b)).length;
-  if (s.cats.length > freeBoxes) throw new Error('more cats than open boxes');
+  if (s.cats.length > freeBoxes) throw new Error("more cats than open boxes");
 }
 
 /** Solid occupant lookup for jumping/sliding. Empty boxes are NOT obstacles. */
@@ -146,7 +152,7 @@ export function catMoves(s: GameState, catId: number): Move[] {
     if (r < 0 || r >= N || c < 0 || c >= N) continue; // flew off the board
     const landing = cellAt(r, c);
     if (isLandable(s, landing)) {
-      out.push({ kind: 'cat', id: catId, from: cat.cell, to: landing });
+      out.push({ kind: "cat", id: catId, from: cat.cell, to: landing });
     }
   }
   return out;
@@ -155,20 +161,22 @@ export function catMoves(s: GameState, catId: number): Move[] {
 export function dogMoves(s: GameState, dogId: number): Move[] {
   const dog = s.dogs[dogId];
   const out: Move[] = [];
-  const step = dog.axis === 'h' ? 1 : N;
+  const step = dog.axis === "h" ? 1 : N;
   const [a, b] = dogCells(dog);
   // backward: cell before the anchor must be free and stay on the dog's line
   const back = a - step;
   const backOk =
-    dog.axis === 'h' ? col(a) > 0 && isPlainFree(s, back) : row(a) > 0 && isPlainFree(s, back);
-  if (backOk) out.push({ kind: 'dog', id: dogId, from: dog.cell, to: back });
+    dog.axis === "h"
+      ? col(a) > 0 && isPlainFree(s, back)
+      : row(a) > 0 && isPlainFree(s, back);
+  if (backOk) out.push({ kind: "dog", id: dogId, from: dog.cell, to: back });
   // forward: cell past the far end
   const fwd = b + step;
   const fwdOk =
-    dog.axis === 'h'
+    dog.axis === "h"
       ? col(b) < N - 1 && isPlainFree(s, fwd)
       : row(b) < N - 1 && isPlainFree(s, fwd);
-  if (fwdOk) out.push({ kind: 'dog', id: dogId, from: dog.cell, to: a + step });
+  if (fwdOk) out.push({ kind: "dog", id: dogId, from: dog.cell, to: a + step });
   return out;
 }
 
@@ -180,7 +188,7 @@ export function allMoves(s: GameState): Move[] {
 }
 
 export function applyMove(s: GameState, m: Move, record = true) {
-  if (m.kind === 'cat') s.cats[m.id].cell = m.to;
+  if (m.kind === "cat") s.cats[m.id].cell = m.to;
   else s.dogs[m.id].cell = m.to;
   if (record) s.history.push(m);
 }
@@ -188,7 +196,7 @@ export function applyMove(s: GameState, m: Move, record = true) {
 export function undo(s: GameState): Move | undefined {
   const m = s.history.pop();
   if (!m) return undefined;
-  if (m.kind === 'cat') s.cats[m.id].cell = m.from;
+  if (m.kind === "cat") s.cats[m.id].cell = m.from;
   else s.dogs[m.id].cell = m.from;
   return m;
 }
@@ -205,7 +213,7 @@ export function isWon(s: GameState): boolean {
 export function dogTrackCells(s: GameState): Set<Cell> {
   const track = new Set<Cell>();
   for (const d of s.dogs) {
-    if (d.axis === 'h') {
+    if (d.axis === "h") {
       const r = row(d.cell);
       for (let c = 0; c < N; c++) track.add(cellAt(r, c));
     } else {

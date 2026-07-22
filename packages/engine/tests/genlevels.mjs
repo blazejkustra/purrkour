@@ -17,8 +17,8 @@ import {
   allMoves,
   applyMove,
   undo,
-} from '../src/game/model.ts';
-import { solve } from '../src/game/solver.ts';
+} from "../src/game/model.ts";
+import { solve } from "../src/game/solver.ts";
 
 let seed = 96261;
 const rand = () => {
@@ -27,7 +27,7 @@ const rand = () => {
 };
 const ri = (n) => Math.floor(rand() * n);
 
-const COLORS = ['red', 'blue', 'violet', 'yellow'];
+const COLORS = ["red", "blue", "violet", "yellow"];
 
 function randomLevel(catCount, dogCount, cushionCount, capped) {
   const free = new Set(Array.from({ length: 25 }, (_, i) => i));
@@ -39,11 +39,11 @@ function randomLevel(catCount, dogCount, cushionCount, capped) {
   const dogs = [];
   for (let i = 0; i < dogCount; i++) {
     for (let tries = 0; tries < 50; tries++) {
-      const axis = rand() < 0.5 ? 'h' : 'v';
-      const r = ri(axis === 'h' ? 5 : 4);
-      const c = ri(axis === 'h' ? 4 : 5);
+      const axis = rand() < 0.5 ? "h" : "v";
+      const r = ri(axis === "h" ? 5 : 4);
+      const c = ri(axis === "h" ? 4 : 5);
       const a = cellAt(r, c);
-      const b = axis === 'h' ? a + 1 : a + 5;
+      const b = axis === "h" ? a + 1 : a + 5;
       if (free.has(a) && free.has(b)) {
         take(a);
         take(b);
@@ -63,13 +63,20 @@ function randomLevel(catCount, dogCount, cushionCount, capped) {
   const cushions = grab(cushionCount);
   const boxes = grab(catCount + (capped ? 1 : 0));
   const cappedBoxes = capped ? [boxes[boxes.length - 1]] : [];
-  const cats = grab(catCount).map((cell, i) => ({ color: COLORS[i % 4], cell }));
-  return { name: '?', cats, dogs, cushions, boxes, cappedBoxes };
+  const cats = grab(catCount).map((cell, i) => ({
+    color: COLORS[i % 4],
+    cell,
+  }));
+  return { name: "?", cats, dogs, cushions, boxes, cappedBoxes };
 }
 
 /** BFS over CAT moves only — false means the dogs must move to win. */
 function solvableCatsOnly(s, maxStates = 100_000) {
-  const key = () => s.cats.map((c) => c.cell).sort((a, b) => a - b).join(',');
+  const key = () =>
+    s.cats
+      .map((c) => c.cell)
+      .sort((a, b) => a - b)
+      .join(",");
   if (isWon(s)) return true;
   const seen = new Set([key()]);
   let frontier = [[]];
@@ -117,9 +124,23 @@ function firstMoveStats(level, minMoves) {
 
 const bands = [
   // row 3 (levels 11-15): few cats + 1 essential dog, pars 5-9
-  { label: 'rowC', cats: [2, 3], dogs: 1, maxCushions: 5, cappedChance: 0.4, par: [5, 9] },
+  {
+    label: "rowC",
+    cats: [2, 3],
+    dogs: 1,
+    maxCushions: 5,
+    cappedChance: 0.4,
+    par: [5, 9],
+  },
   // row 4 (levels 16-20): 2-3 cats + 2 essential dogs, pars 10-20
-  { label: 'rowD', cats: [2, 3], dogs: 2, maxCushions: 3, cappedChance: 0.2, par: [10, 20] },
+  {
+    label: "rowD",
+    cats: [2, 3],
+    dogs: 2,
+    maxCushions: 3,
+    cappedChance: 0.2,
+    par: [10, 20],
+  },
 ];
 
 for (const band of bands) {
@@ -129,23 +150,39 @@ for (const band of bands) {
   while (attempts < 60000) {
     attempts++;
     try {
-      const catCount = Array.isArray(band.cats) ? band.cats[ri(band.cats.length)] : band.cats;
+      const catCount = Array.isArray(band.cats)
+        ? band.cats[ri(band.cats.length)]
+        : band.cats;
       const capped = rand() < band.cappedChance;
-      const level = randomLevel(catCount, band.dogs, ri(band.maxCushions), capped);
+      const level = randomLevel(
+        catCount,
+        band.dogs,
+        ri(band.maxCushions),
+        capped,
+      );
       const state = createState(level);
       if (isWon(state)) continue;
       if (level.cats.some((c) => level.boxes.includes(c.cell))) continue;
       const sol = solve(state, 400_000);
-      if (!sol || sol.minMoves < band.par[0] || sol.minMoves > band.par[1]) continue;
+      if (!sol || sol.minMoves < band.par[0] || sol.minMoves > band.par[1])
+        continue;
       // dogs must matter: unsolvable without them AND each one moves
       if (solvableCatsOnly(createState(level))) continue;
-      const dogsUsed = new Set(sol.line.filter((m) => m.kind === 'dog').map((m) => m.id));
+      const dogsUsed = new Set(
+        sol.line.filter((m) => m.kind === "dog").map((m) => m.id),
+      );
       if (dogsUsed.size < level.dogs.length) continue;
       const { legal, optimal } = firstMoveStats(level, sol.minMoves);
       const score = sol.minMoves + (2 * legal) / Math.max(1, optimal);
       const prev = byPar.get(sol.minMoves);
       if (!prev || score > prev.score) {
-        byPar.set(sol.minMoves, { level, par: sol.minMoves, legal, optimal, score });
+        byPar.set(sol.minMoves, {
+          level,
+          par: sol.minMoves,
+          legal,
+          optimal,
+          score,
+        });
       }
     } catch {
       continue;

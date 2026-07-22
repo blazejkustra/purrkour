@@ -8,9 +8,9 @@
  * configure() call, and hands them in here. On react-native-webgpu the
  * context carries a present() method — frame() calls it when it exists.
  */
-import tgpu, { d, std, type TgpuRoot } from 'typegpu';
-import { mat4, vec3 } from 'wgpu-matrix';
-import type { MeshData } from './gltf.ts';
+import tgpu, { d, std, type TgpuRoot } from "typegpu";
+import { mat4, vec3 } from "wgpu-matrix";
+import type { MeshData } from "./gltf.ts";
 
 export interface InstanceSpec {
   pos: [number, number, number];
@@ -61,25 +61,33 @@ const Vertex = d.unstruct({
 });
 
 const MSAA = 4;
-const DEPTH_FORMAT: GPUTextureFormat = 'depth24plus';
+const DEPTH_FORMAT: GPUTextureFormat = "depth24plus";
 
-const packSnorm16 = (v: number) => Math.round(Math.max(-1, Math.min(1, v)) * 32767);
-const packUnorm16 = (v: number) => Math.round(Math.max(0, Math.min(1, v)) * 65535);
+const packSnorm16 = (v: number) =>
+  Math.round(Math.max(-1, Math.min(1, v)) * 32767);
+const packUnorm16 = (v: number) =>
+  Math.round(Math.max(0, Math.min(1, v)) * 65535);
 
 export type Renderer = ReturnType<typeof createRenderer>;
 
-export function createRenderer({ root, context, surface, format, clearColor }: RendererInit) {
+export function createRenderer({
+  root,
+  context,
+  surface,
+  format,
+  clearColor,
+}: RendererInit) {
   const device = root.device;
   const clear = clearColor ?? { r: 0, g: 0, b: 0, a: 0 };
 
   const camera = root.createUniform(CameraData);
   const sampler = root.createSampler({
-    magFilter: 'linear',
-    minFilter: 'linear',
+    magFilter: "linear",
+    minFilter: "linear",
   });
 
   const batchLayout = tgpu.bindGroupLayout({
-    instances: { storage: d.arrayOf(Instance), access: 'readonly' },
+    instances: { storage: d.arrayOf(Instance), access: "readonly" },
     tex: { texture: d.texture2d(d.f32) },
   });
 
@@ -100,7 +108,7 @@ export function createRenderer({ root, context, surface, format, clearColor }: R
       localY: d.f32,
     },
   })((input) => {
-    'use gpu';
+    "use gpu";
     const inst = batchLayout.$.instances[input.iid];
     const c = inst.rotCS.x;
     const s = inst.rotCS.y;
@@ -122,25 +130,41 @@ export function createRenderer({ root, context, surface, format, clearColor }: R
   });
 
   const frag = tgpu.fragmentFn({
-    in: { wNormal: d.vec3f, fragUv: d.vec2f, tint: d.vec3f, glow: d.f32, localY: d.f32 },
+    in: {
+      wNormal: d.vec3f,
+      fragUv: d.vec2f,
+      tint: d.vec3f,
+      glow: d.f32,
+      localY: d.f32,
+    },
     out: d.vec4f,
   })((input) => {
-    'use gpu';
-    const albedo = std.textureSample(batchLayout.$.tex, sampler.$, input.fragUv);
+    "use gpu";
+    const albedo = std.textureSample(
+      batchLayout.$.tex,
+      sampler.$,
+      input.fragUv,
+    );
     const n = std.normalize(input.wNormal);
     const sun = std.normalize(d.vec3f(0.45, 1.0, 0.3));
     const diff = std.max(std.dot(n, sun), 0);
     // cozy lamp-light: warm golden key over a soft rosy ambient
     const ao = 0.82 + 0.18 * std.clamp(input.localY * 2.2, 0, 1);
-    const light = d.vec3f(0.64, 0.6, 0.57) * ao + d.vec3f(0.56, 0.5, 0.4) * diff;
+    const light =
+      d.vec3f(0.64, 0.6, 0.57) * ao + d.vec3f(0.56, 0.5, 0.4) * diff;
     let color = albedo.rgb * input.tint * light;
     // warm specular pop so pieces read glossy like molded plastic
     const view = std.normalize(camera.$.camPos);
     const h = std.normalize(sun + view);
-    color += d.vec3f(1, 0.9, 0.72) * (std.pow(std.max(std.dot(n, h), 0), 42) * 0.32);
+    color +=
+      d.vec3f(1, 0.9, 0.72) * (std.pow(std.max(std.dot(n, h), 0), 42) * 0.32);
     // pulsing highlight for selection / legal-target tiles
     const pulse = 0.72 + 0.28 * std.sin(camera.$.time * 5.5);
-    color = std.mix(color, d.vec3f(1.35, 1.24, 0.85), input.glow * pulse * 0.85);
+    color = std.mix(
+      color,
+      d.vec3f(1.35, 1.24, 0.85),
+      input.glow * pulse * 0.85,
+    );
     return d.vec4f(color, 1);
   });
 
@@ -150,9 +174,13 @@ export function createRenderer({ root, context, surface, format, clearColor }: R
     vertex: vert,
     fragment: frag,
     targets: { format },
-    primitive: { topology: 'triangle-list', cullMode: 'none' },
+    primitive: { topology: "triangle-list", cullMode: "none" },
     multisample: { count: MSAA },
-    depthStencil: { format: DEPTH_FORMAT, depthWriteEnabled: true, depthCompare: 'less' },
+    depthStencil: {
+      format: DEPTH_FORMAT,
+      depthWriteEnabled: true,
+      depthCompare: "less",
+    },
   });
   root.unwrap(pipeline); // compile at boot, not first frame
 
@@ -160,7 +188,7 @@ export function createRenderer({ root, context, surface, format, clearColor }: R
 
   function uploadMesh(mesh: MeshData) {
     const vertexCount = mesh.positions.length / 3;
-    if (vertexCount > 0xffff) throw new Error('mesh too large for u16 indices');
+    if (vertexCount > 0xffff) throw new Error("mesh too large for u16 indices");
     // pos f32x3 + normal snorm16x4 + uv unorm16x2 + color unorm8x4 = 28 B
     const STRIDE = 28;
     const packed = new ArrayBuffer(vertexCount * STRIDE);
@@ -186,11 +214,15 @@ export function createRenderer({ root, context, surface, format, clearColor }: R
       pU8[i * STRIDE + 26] = Math.round(Math.max(0, Math.min(1, b)) * 255);
       pU8[i * STRIDE + 27] = 255;
     }
-    const vertexBuf = root.createBuffer(d.disarrayOf(Vertex, vertexCount)).$usage('vertex');
+    const vertexBuf = root
+      .createBuffer(d.disarrayOf(Vertex, vertexCount))
+      .$usage("vertex");
     device.queue.writeBuffer(vertexBuf.buffer, 0, packed);
     const padded = new Uint16Array((mesh.indices.length + 1) & ~1);
     padded.set(mesh.indices);
-    const indexBuf = root.createBuffer(d.arrayOf(d.u16, padded.length)).$usage('index');
+    const indexBuf = root
+      .createBuffer(d.arrayOf(d.u16, padded.length))
+      .$usage("index");
     device.queue.writeBuffer(indexBuf.buffer, 0, padded);
     return { vertexBuf, indexBuf, indexCount: mesh.indices.length };
   }
@@ -198,7 +230,9 @@ export function createRenderer({ root, context, surface, format, clearColor }: R
   /** A 2x2 all-white texture — pieces are colored by vertex colors + tints.
    * Built from raw pixel bytes so it works without OffscreenCanvas (mobile). */
   function whiteTexture() {
-    const tex = root.createTexture({ size: [2, 2], format: 'rgba8unorm' }).$usage('sampled');
+    const tex = root
+      .createTexture({ size: [2, 2], format: "rgba8unorm" })
+      .$usage("sampled");
     device.queue.writeTexture(
       { texture: root.unwrap(tex) },
       new Uint8Array(16).fill(255),
@@ -226,7 +260,7 @@ export function createRenderer({ root, context, surface, format, clearColor }: R
     indexCount: number;
   }
   const makeInstanceBuf = (capacity: number) =>
-    root.createBuffer(d.arrayOf(Instance, capacity)).$usage('storage');
+    root.createBuffer(d.arrayOf(Instance, capacity)).$usage("storage");
   const makeDrawChain = (
     mesh: ReturnType<typeof uploadMesh>,
     buf: ReturnType<typeof makeInstanceBuf>,
@@ -239,7 +273,12 @@ export function createRenderer({ root, context, surface, format, clearColor }: R
 
   const batches = new Map<string, Batch>();
 
-  function addBatch(name: string, mesh: MeshData, tex: Texture, capacity: number) {
+  function addBatch(
+    name: string,
+    mesh: MeshData,
+    tex: Texture,
+    capacity: number,
+  ) {
     const gpuMesh = uploadMesh(mesh);
     const buf = makeInstanceBuf(capacity);
     batches.set(name, {
@@ -299,7 +338,8 @@ export function createRenderer({ root, context, surface, format, clearColor }: R
     // narrow (portrait) screens dolly the camera straight back until the
     // whole board fits the horizontal FOV
     const fit = Math.max(1, 0.92 / aspect);
-    for (let i = 0; i < 3; i++) eye[i] = target[i] + (eyeBase[i] - target[i]) * fit;
+    for (let i = 0; i < 3; i++)
+      eye[i] = target[i] + (eyeBase[i] - target[i]) * fit;
     mat4.perspective((38 * Math.PI) / 180, aspect, 0.1, 80, proj);
     mat4.lookAt(eye, target, vec3.fromValues(0, 1, 0), view);
     mat4.multiply(proj, view, viewProj);
@@ -312,7 +352,11 @@ export function createRenderer({ root, context, surface, format, clearColor }: R
   }
 
   /** Pointer (css px / dp) -> world-space ray/plane hit at height `planeY`. */
-  function pickGround(px: number, py: number, planeY: number): [number, number] | null {
+  function pickGround(
+    px: number,
+    py: number,
+    planeY: number,
+  ): [number, number] | null {
     const ndcX = (px / surface.clientWidth) * 2 - 1;
     const ndcY = 1 - (py / surface.clientHeight) * 2;
     const near = vec3.create();
@@ -371,15 +415,15 @@ export function createRenderer({ root, context, surface, format, clearColor }: R
           {
             view: msaaView as GPUTextureView,
             resolveTarget: swap.createView(),
-            loadOp: 'clear',
-            storeOp: 'discard',
+            loadOp: "clear",
+            storeOp: "discard",
             clearValue: clear,
           },
         ],
         depthStencilAttachment: {
           view: depthView as GPUTextureView,
-          depthLoadOp: 'clear',
-          depthStoreOp: 'discard',
+          depthLoadOp: "clear",
+          depthStoreOp: "discard",
           depthClearValue: 1,
         },
       });

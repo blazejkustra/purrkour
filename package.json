@@ -5,12 +5,15 @@
   "type": "module",
   "scripts": {
     "types": "pnpm -r run types",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "test": "pnpm -r --if-present run test",
     "web": "pnpm --filter @purrkour/web dev",
     "ios": "pnpm --filter @purrkour/mobile ios",
     "android": "pnpm --filter @purrkour/mobile android"
   },
   "devDependencies": {
+    "prettier": "^3.9.6",
     "typescript": "npm:tsover@6.0.2"
   },
   "packageManager": "pnpm@11.13.0"

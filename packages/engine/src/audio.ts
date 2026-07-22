@@ -64,10 +64,38 @@ const EIGHTH = 60 / BPM / 2;
 // bar 1: a curious upward peek     bar 2: answer, settling
 // bar 3: wander a little higher    bar 4: come home, long rest
 const MELODY: (number | null)[] = [
-  72, null, 76, null, 79, null, null, 74,
-  null, null, 76, null, 72, null, null, null,
-  81, null, 79, null, 76, null, 74, null,
-  72, null, null, 67, null, null, null, null,
+  72,
+  null,
+  76,
+  null,
+  79,
+  null,
+  null,
+  74,
+  null,
+  null,
+  76,
+  null,
+  72,
+  null,
+  null,
+  null,
+  81,
+  null,
+  79,
+  null,
+  76,
+  null,
+  74,
+  null,
+  72,
+  null,
+  null,
+  67,
+  null,
+  null,
+  null,
+  null,
 ];
 /** One triangle bass note per bar: C3, A2, G2, C3. */
 const BASS = [48, 45, 43, 48];
@@ -105,7 +133,15 @@ export function createAudio(createContext: () => AudioContextLike) {
     bus?: GainLike | null;
   }
 
-  function tone({ freq, dur, type = 'sine', vol = 0.08, when, slide, bus }: ToneOpts) {
+  function tone({
+    freq,
+    dur,
+    type = "sine",
+    vol = 0.08,
+    when,
+    slide,
+    bus,
+  }: ToneOpts) {
     const ac = ensure();
     const t0 = when ?? ac.currentTime;
     const osc = ac.createOscillator();
@@ -129,13 +165,34 @@ export function createAudio(createContext: () => AudioContextLike) {
   function scheduleSlot(when: number, s: number) {
     const note = MELODY[s % MELODY.length];
     if (note !== null) {
-      tone({ freq: midiHz(note), dur: EIGHTH * 2.6, type: 'triangle', vol: 0.055, when, bus: musicBus });
+      tone({
+        freq: midiHz(note),
+        dur: EIGHTH * 2.6,
+        type: "triangle",
+        vol: 0.055,
+        when,
+        bus: musicBus,
+      });
       // a whisper of the octave above gives the music-box shimmer
-      tone({ freq: midiHz(note + 12), dur: EIGHTH * 1.6, type: 'sine', vol: 0.018, when, bus: musicBus });
+      tone({
+        freq: midiHz(note + 12),
+        dur: EIGHTH * 1.6,
+        type: "sine",
+        vol: 0.018,
+        when,
+        bus: musicBus,
+      });
     }
     if (s % 8 === 0) {
       const bass = BASS[(s / 8) % BASS.length];
-      tone({ freq: midiHz(bass), dur: EIGHTH * 7, type: 'triangle', vol: 0.045, when, bus: musicBus });
+      tone({
+        freq: midiHz(bass),
+        dur: EIGHTH * 7,
+        type: "triangle",
+        vol: 0.045,
+        when,
+        bus: musicBus,
+      });
     }
   }
 
@@ -165,7 +222,8 @@ export function createAudio(createContext: () => AudioContextLike) {
     musicOn = false;
     if (timer !== null) clearInterval(timer);
     timer = null;
-    if (ctx && musicBus) musicBus.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
+    if (ctx && musicBus)
+      musicBus.gain.setTargetAtTime(0, ctx.currentTime, 0.08);
   }
 
   /** Returns the new state. */
@@ -178,7 +236,7 @@ export function createAudio(createContext: () => AudioContextLike) {
   /** Call from any user gesture — browsers gate audio behind one. */
   function unlock() {
     const ac = ensure();
-    if (ac.state === 'suspended') void ac.resume();
+    if (ac.state === "suspended") void ac.resume();
   }
 
   // --- sound effects -----------------------------------------------------------
@@ -188,30 +246,64 @@ export function createAudio(createContext: () => AudioContextLike) {
   /** Two-tone downward slide — the shape of a meow. */
   function meow() {
     const t = now();
-    tone({ freq: 640, slide: 430, dur: 0.16, type: 'sine', vol: 0.07, when: t });
-    tone({ freq: 520, slide: 320, dur: 0.22, type: 'sine', vol: 0.06, when: t + 0.11 });
+    tone({
+      freq: 640,
+      slide: 430,
+      dur: 0.16,
+      type: "sine",
+      vol: 0.07,
+      when: t,
+    });
+    tone({
+      freq: 520,
+      slide: 320,
+      dur: 0.22,
+      type: "sine",
+      vol: 0.06,
+      when: t + 0.11,
+    });
   }
 
   /** Low soft rumble — two close sawtooths beat against each other. */
   function purr() {
     const t = now();
-    tone({ freq: 52, dur: 0.55, type: 'sawtooth', vol: 0.04, when: t });
-    tone({ freq: 57, dur: 0.55, type: 'sawtooth', vol: 0.035, when: t });
+    tone({ freq: 52, dur: 0.55, type: "sawtooth", vol: 0.04, when: t });
+    tone({ freq: 57, dur: 0.55, type: "sawtooth", vol: 0.035, when: t });
   }
 
   /** Rising 3-note pentatonic arpeggio — something clicked into place. */
   function match() {
     const t = now();
     [72, 76, 79].forEach((m, i) =>
-      tone({ freq: midiHz(m), dur: 0.16, type: 'triangle', vol: 0.09, when: t + i * 0.07 }),
+      tone({
+        freq: midiHz(m),
+        dur: 0.16,
+        type: "triangle",
+        vol: 0.09,
+        when: t + i * 0.07,
+      }),
     );
   }
 
   /** Gentle low wobble — "not quite", never harsh. */
   function wrong() {
     const t = now();
-    tone({ freq: 185, slide: 160, dur: 0.22, type: 'sine', vol: 0.07, when: t });
-    tone({ freq: 150, slide: 135, dur: 0.26, type: 'sine', vol: 0.06, when: t + 0.12 });
+    tone({
+      freq: 185,
+      slide: 160,
+      dur: 0.22,
+      type: "sine",
+      vol: 0.07,
+      when: t,
+    });
+    tone({
+      freq: 150,
+      slide: 135,
+      dur: 0.26,
+      type: "sine",
+      vol: 0.06,
+      when: t + 0.12,
+    });
   }
 
   /** Triumphant "ta-da-da-DAA!" — three quick stabs up the C major triad
@@ -220,21 +312,39 @@ export function createAudio(createContext: () => AudioContextLike) {
     const t = now();
     // pickup stabs: G4 -> C5 -> E5
     [67, 72, 76].forEach((m, i) => {
-      tone({ freq: midiHz(m), dur: 0.13, type: 'triangle', vol: 0.1, when: t + i * 0.11 });
+      tone({
+        freq: midiHz(m),
+        dur: 0.13,
+        type: "triangle",
+        vol: 0.1,
+        when: t + i * 0.11,
+      });
     });
     // the DAA: full C major chord, held
     for (const m of [72, 76, 79, 84]) {
-      tone({ freq: midiHz(m), dur: 0.75, type: 'triangle', vol: 0.06, when: t + 0.33 });
+      tone({
+        freq: midiHz(m),
+        dur: 0.75,
+        type: "triangle",
+        vol: 0.06,
+        when: t + 0.33,
+      });
     }
     // glitter raining over the chord
     [84, 88, 91].forEach((m, i) => {
-      tone({ freq: midiHz(m), dur: 0.12, type: 'sine', vol: 0.05, when: t + 0.42 + i * 0.08 });
+      tone({
+        freq: midiHz(m),
+        dur: 0.12,
+        type: "sine",
+        vol: 0.05,
+        when: t + 0.42 + i * 0.08,
+      });
     });
   }
 
   /** Tiny pop for picking up / selecting a piece. */
   function select() {
-    tone({ freq: 880, slide: 1180, dur: 0.07, type: 'sine', vol: 0.05 });
+    tone({ freq: 880, slide: 1180, dur: 0.07, type: "sine", vol: 0.05 });
   }
 
   return {
@@ -258,4 +368,4 @@ export type GameAudio = ReturnType<typeof createAudio>;
 
 /** The SFX ids a play session emits — apps route them into GameAudio
  * (and, on mobile, into haptics). */
-export type SfxId = 'meow' | 'select' | 'match' | 'wrong' | 'win';
+export type SfxId = "meow" | "select" | "match" | "wrong" | "win";

@@ -1,5 +1,5 @@
-import React from 'react';
-import Svg, { Circle, Path } from 'react-native-svg';
+import React from "react";
+import Svg, { Circle, Path } from "react-native-svg";
 
 interface IconProps {
   size?: number;
@@ -7,7 +7,7 @@ interface IconProps {
 }
 
 /** House — leave the level, back to the menu. */
-export function HomeIcon({ size = 24, color = '#fff' }: IconProps) {
+export function HomeIcon({ size = 24, color = "#fff" }: IconProps) {
   return (
     <Svg
       width={size}
@@ -26,7 +26,7 @@ export function HomeIcon({ size = 24, color = '#fff' }: IconProps) {
 }
 
 /** Undo — arrow curling back. */
-export function UndoIcon({ size = 24, color = '#fff' }: IconProps) {
+export function UndoIcon({ size = 24, color = "#fff" }: IconProps) {
   return (
     <Svg
       width={size}
@@ -45,7 +45,7 @@ export function UndoIcon({ size = 24, color = '#fff' }: IconProps) {
 }
 
 /** Reset — circular refresh. */
-export function ResetIcon({ size = 24, color = '#fff' }: IconProps) {
+export function ResetIcon({ size = 24, color = "#fff" }: IconProps) {
   return (
     <Svg
       width={size}
@@ -65,7 +65,7 @@ export function ResetIcon({ size = 24, color = '#fff' }: IconProps) {
 }
 
 /** Lightbulb — hint. */
-export function HintIcon({ size = 24, color = '#fff' }: IconProps) {
+export function HintIcon({ size = 24, color = "#fff" }: IconProps) {
   return (
     <Svg
       width={size}
@@ -87,9 +87,9 @@ export function HintIcon({ size = 24, color = '#fff' }: IconProps) {
 /** Eighth-note pair; `muted` draws a slash through it. */
 export function MusicIcon({
   size = 24,
-  color = '#fff',
+  color = "#fff",
   muted = false,
-  slashColor = '#b85a3c',
+  slashColor = "#b85a3c",
 }: IconProps & { muted?: boolean; slashColor?: string }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
