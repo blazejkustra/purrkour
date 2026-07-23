@@ -40,6 +40,9 @@
   --tier2-bg: #e6d9f6;
   --tier2-edge: #c6b2e2;
   --tier2-ink: #44315f;
+  --tier3-bg: #f8d8c6;
+  --tier3-edge: #e0a98d;
+  --tier3-ink: #7c3a20;
   --locked-ink: rgba(46, 38, 32, 0.38);
   --locked-bg: rgba(46, 38, 32, 0.07);
   --title-shadow: rgba(120, 78, 40, 0.22);
@@ -533,7 +536,9 @@ body::after {
   position: relative;
   width: min(100%, 560px);
   margin: 0 auto;
-  max-height: 46vh;
+  /* tall enough for all five tier rows; the grid scrolls only as a
+   * fallback on very short windows */
+  max-height: 56vh;
   display: flex;
   flex-direction: column;
   background: var(--card);
@@ -578,7 +583,7 @@ body::after {
   overflow-y: auto;
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 12px 9px;
+  gap: 10px 9px;
   scrollbar-width: thin;
   scrollbar-color: rgba(65, 51, 42, 0.25) transparent;
 }
@@ -633,7 +638,7 @@ body::after {
 .lvl:disabled .lvl-stars {
   color: var(--locked-ink);
 }
-/* star-gated tier rows, Rocket-League style: amber then violet */
+/* star-gated tier rows, Rocket-League style: amber, violet, then clay */
 .lvl.tier-1:not(.locked) {
   background: var(--tier1-bg);
   color: var(--tier1-ink);
@@ -644,11 +649,19 @@ body::after {
   color: var(--tier2-ink);
   --edge: var(--tier2-edge);
 }
+.lvl.tier-3:not(.locked) {
+  background: var(--tier3-bg);
+  color: var(--tier3-ink);
+  --edge: var(--tier3-edge);
+}
 .lvl.tier-1:not(.locked) .lvl-stars {
   color: #c98f1d;
 }
 .lvl.tier-2:not(.locked) .lvl-stars {
   color: #8a6cc4;
+}
+.lvl.tier-3:not(.locked) .lvl-stars {
+  color: #c26a45;
 }
 .lvl.locked .lvl-stars.need {
   font-weight: 700;

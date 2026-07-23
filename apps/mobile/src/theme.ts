@@ -38,6 +38,9 @@ export const colors = {
   tier2Bg: "#e6d9f6",
   tier2Edge: "#c6b2e2",
   tier2Ink: "#44315f",
+  tier3Bg: "#f8d8c6",
+  tier3Edge: "#e0a98d",
+  tier3Ink: "#7c3a20",
   lockedInk: "rgba(46, 38, 32, 0.38)",
   lockedBg: "rgba(46, 38, 32, 0.07)",
   /** Soft warm shadow for display text on cream cards. */

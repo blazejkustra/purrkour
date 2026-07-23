@@ -15,9 +15,9 @@ const BEST_KEY = "purrkour.best";
 const TUTORIAL_KEY = "purrkour.tutorialSeen";
 const MUSIC_KEY = "purrkour.music";
 
-/** Tier thresholds: levels 1-10 | 11-15 | 16-20. */
-export const TIER_STARS = [0, 20, 36];
-export const tierOf = (i: number) => (i < 10 ? 0 : i < 15 ? 1 : 2);
+/** Tier thresholds: levels 1-10 | 11-15 | 16-20 | 21-25. */
+export const TIER_STARS = [0, 20, 36, 50];
+export const tierOf = (i: number) => (i < 10 ? 0 : i < 15 ? 1 : i < 20 ? 2 : 3);
 
 /** Stars for a solved level given its par and the recorded best. */
 export const starsFor = (par: number, best: number) =>

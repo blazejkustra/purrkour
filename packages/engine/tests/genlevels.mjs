@@ -20,10 +20,15 @@ import {
 } from "../src/game/model.ts";
 import { solve } from "../src/game/solver.ts";
 
+// mulberry32: integer-safe PRNG. The previous LCG multiplied past 2^53 and
+// float precision loss collapsed EVERY seed into the same sequence.
 let seed = 96261;
 const rand = () => {
-  seed = (seed * 1103515245 + 12345) & 0x7fffffff;
-  return seed / 0x7fffffff;
+  seed = (seed + 0x6d2b79f5) >>> 0;
+  let t = seed;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 };
 const ri = (n) => Math.floor(rand() * n);
 

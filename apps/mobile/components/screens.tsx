@@ -28,6 +28,34 @@ import { MusicIcon } from "./icons.tsx";
 
 const logo = require("../assets/splash-icon.png");
 
+/** Level-tile colors per star-gated tier: sand, amber, violet, clay. */
+const TIER_TILE = [
+  {
+    bg: colors.tier0Bg,
+    ink: colors.ink,
+    star: colors.starOnCream,
+    edge: colors.tier0Edge,
+  },
+  {
+    bg: colors.tier1Bg,
+    ink: colors.tier1Ink,
+    star: colors.tier1Ink,
+    edge: colors.tier1Edge,
+  },
+  {
+    bg: colors.tier2Bg,
+    ink: colors.tier2Ink,
+    star: colors.tier2Ink,
+    edge: colors.tier2Edge,
+  },
+  {
+    bg: colors.tier3Bg,
+    ink: colors.tier3Ink,
+    star: colors.tier3Ink,
+    edge: colors.tier3Edge,
+  },
+];
+
 export function MenuScreen({
   progress,
   musicOn,
@@ -108,30 +136,12 @@ export function MenuScreen({
             const tier = tierOf(i);
             const unlocked = progress.isUnlocked(i);
             const stars = progress.stars(i);
-            const tierBg =
-              tier === 1
-                ? colors.tier1Bg
-                : tier === 2
-                  ? colors.tier2Bg
-                  : colors.tier0Bg;
-            const tierInk =
-              tier === 1
-                ? colors.tier1Ink
-                : tier === 2
-                  ? colors.tier2Ink
-                  : colors.ink;
-            const starInk =
-              tier === 1
-                ? colors.tier1Ink
-                : tier === 2
-                  ? colors.tier2Ink
-                  : colors.starOnCream;
-            const tierEdge =
-              tier === 1
-                ? colors.tier1Edge
-                : tier === 2
-                  ? colors.tier2Edge
-                  : colors.tier0Edge;
+            const {
+              bg: tierBg,
+              ink: tierInk,
+              star: starInk,
+              edge: tierEdge,
+            } = TIER_TILE[tier];
             return (
               <BouncyPressable
                 key={level.name}
@@ -369,7 +379,7 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
-    bottom: "44%",
+    bottom: "56%",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -419,7 +429,9 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    maxHeight: "46%",
+    // tall enough for all five tier rows; the grid scrolls only as a
+    // fallback on short screens
+    maxHeight: "56%",
     backgroundColor: colors.card,
     borderTopLeftRadius: 36,
     borderTopRightRadius: 36,
@@ -449,7 +461,7 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    rowGap: 11,
+    rowGap: 10,
     columnGap: 8,
     justifyContent: "center",
     paddingBottom: 8,

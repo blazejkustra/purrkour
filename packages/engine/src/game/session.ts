@@ -210,6 +210,8 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
   const particles: Particle[] = [];
   const yarnPoke = [-10, -10];
   let dogDustAcc = 0;
+  /** Clock of the latest tick, for queries that arrive without a timestamp. */
+  let lastNow = 0;
 
   const topY = (cell: Cell) => (track.has(cell) ? RAISED_H : TILE_H);
 
@@ -496,15 +498,20 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
 
   // --- yarn toys -----------------------------------------------------------------
 
+  /** How long a poked yarn ball stays airborne — and unpokeable. */
+  const YARN_HOP_S = 0.65;
+
   /** Where a yarn ball sits right now — depends on the screen's aspect. */
   const yarnXZ = (y: (typeof YARNS)[number]) =>
     renderer.aspect() < 1.1 ? y.tall : y.wide;
 
-  /** Off-board click on a yarn ball? Returns its index, or -1. */
-  function yarnAt(px: number, py: number): number {
+  /** Off-board click on a yarn ball? Returns its index, or -1. Mid-hop balls
+   * don't count — they can't be poked again until they land. */
+  function yarnAt(px: number, py: number, now: number): number {
     const hit = renderer.pickGround(px, py, -0.33);
     if (!hit) return -1;
     for (const [i, y] of YARNS.entries()) {
+      if (now - yarnPoke[i] < YARN_HOP_S) continue;
       const [yx, yz] = yarnXZ(y);
       if (Math.hypot(hit[0] - yx, hit[1] - yz) < 0.55 * y.s) return i;
     }
@@ -545,7 +552,7 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
       ? legalTargets().has(cell) ||
           state.cats.some((c) => c.cell === cell) ||
           state.dogs.some((dg) => dogCells(dg).includes(cell))
-      : yarnAt(px, py) >= 0;
+      : yarnAt(px, py, lastNow) >= 0;
   }
 
   function beginDrag(
@@ -580,7 +587,7 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
     if (!active || anim || won) return;
     const cell = cellFromPoint(px, py);
     if (cell === null) {
-      const yi = yarnAt(px, py);
+      const yi = yarnAt(px, py, now);
       if (yi >= 0) pokeYarn(yi, now);
       else selected = null;
       return;
@@ -742,8 +749,8 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
       let hop = 0;
       let spin = 0;
       let squash = 1;
-      if (t >= 0 && t < 0.65) {
-        const k = t / 0.65;
+      if (t >= 0 && t < YARN_HOP_S) {
+        const k = t / YARN_HOP_S;
         hop = 0.55 * Math.sin(Math.PI * k);
         // exactly two full turns: easeOut(1) === 1, so the ball lands back on
         // its resting rotation with no end-of-animation snap
@@ -967,6 +974,7 @@ export function createSession(renderer: Renderer, events: SessionEvents) {
   /** Advance simulation: finish due animations, dust, particles. Call once
    * per frame before buildScene. */
   function tick(now: number, dt: number) {
+    lastNow = now;
     if (anim && now - anim.start >= anim.dur) finishMove();
     emitDogDust(dt, now);
     updateParticles(dt);

@@ -68,15 +68,6 @@ export const LEVELS: Level[] = [
     par: 3,
   },
   {
-    name: "Move Along, Pup",
-    intro: "No path? Slide the dog and build your own jump.",
-    cats: [{ color: "red", cell: 11 }],
-    dogs: [{ cell: 18, axis: "h" }],
-    cushions: [15, 20],
-    boxes: [21],
-    par: 3,
-  },
-  {
     name: "Double Trouble",
     intro: "Two cats, one dog, many opinions about who jumps first.",
     cats: [
@@ -125,6 +116,23 @@ export const LEVELS: Level[] = [
     cushions: [16, 8, 6],
     boxes: [10, 21, 17, 5],
     cappedBoxes: [5],
+    par: 7,
+  },
+  {
+    name: "Dog Park",
+    intro:
+      "Two dogs now, one per lane. Twice the traffic, twice the springboards.",
+    cats: [
+      { color: "red", cell: 11 },
+      { color: "blue", cell: 3 },
+      { color: "violet", cell: 12 },
+    ],
+    dogs: [
+      { cell: 6, axis: "h" },
+      { cell: 17, axis: "h" },
+    ],
+    cushions: [0],
+    boxes: [20, 13, 1],
     par: 7,
   },
   {
@@ -194,6 +202,88 @@ export const LEVELS: Level[] = [
     cushions: [],
     boxes: [2, 13, 20],
     par: 10,
+  },
+  {
+    name: "Conga Line",
+    intro:
+      "Three cats in a queue down the middle. Only one opening move works.",
+    cats: [
+      { color: "red", cell: 7 },
+      { color: "blue", cell: 17 },
+      { color: "violet", cell: 12 },
+    ],
+    dogs: [
+      { cell: 20, axis: "h" },
+      { cell: 18, axis: "v" },
+    ],
+    cushions: [9, 5, 16],
+    boxes: [24, 19, 8],
+    par: 10,
+  },
+  {
+    name: "Downstairs",
+    intro: "The boxes are two floors down. The dogs are the stairs.",
+    cats: [
+      { color: "red", cell: 0 },
+      { color: "blue", cell: 2 },
+    ],
+    dogs: [
+      { cell: 11, axis: "h" },
+      { cell: 5, axis: "h" },
+    ],
+    cushions: [19, 3],
+    boxes: [16, 17],
+    par: 10,
+  },
+  {
+    name: "Double Doors",
+    intro: "Two doors, both dogs. Only one order gets everyone through.",
+    cats: [
+      { color: "red", cell: 15 },
+      { color: "blue", cell: 10 },
+      { color: "violet", cell: 24 },
+    ],
+    dogs: [
+      { cell: 12, axis: "v" },
+      { cell: 8, axis: "v" },
+    ],
+    cushions: [11, 21, 19],
+    boxes: [23, 2, 5],
+    par: 11,
+  },
+  {
+    name: "Crosswalk",
+    intro:
+      "Two dogs crossing paths in the middle. Time your leaps like a local.",
+    cats: [
+      { color: "red", cell: 16 },
+      { color: "blue", cell: 4 },
+      { color: "violet", cell: 17 },
+    ],
+    dogs: [
+      { cell: 10, axis: "h" },
+      { cell: 7, axis: "v" },
+    ],
+    cushions: [20, 18, 23],
+    boxes: [9, 5, 24],
+    par: 12,
+  },
+  {
+    name: "Tangled Yarn",
+    intro: "Nine ways to open. One untangles. The rest are just knots.",
+    cats: [
+      { color: "red", cell: 12 },
+      { color: "blue", cell: 7 },
+      { color: "violet", cell: 23 },
+    ],
+    dogs: [
+      { cell: 8, axis: "v" },
+      { cell: 6, axis: "v" },
+    ],
+    cushions: [21],
+    boxes: [15, 20, 3, 24],
+    cappedBoxes: [24],
+    par: 12,
   },
   {
     name: "Rush Hour Whiskers",
