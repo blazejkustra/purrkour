@@ -2,6 +2,7 @@
   "expo": {
     "name": "Purrkour",
     "slug": "purrkour",
+    "owner": "purrkour",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -87,6 +88,11 @@
           "backgroundColor": "#f9efdd"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "6f4e260c-22f9-4a8b-8250-7688fbed3e8d"
+      }
+    }
   }
 }
