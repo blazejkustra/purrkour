@@ -168,7 +168,9 @@ const SPARK_COLORS: [number, number, number][] = [
 
 /** The two yarn balls on the rug — clickable toys. Wide screens show them
  * flanking the board; tall (portrait) screens can't — the camera only fits
- * the board's width — so there they lounge on the rug's front edge. */
+ * the board's width — so there they lounge on the rug's front edge. Keep the
+ * tall spots at z ≥ ~3.6: closer in, the tray's silhouette swallows them on
+ * near-square screens and they read as stuck under the board. */
 const YARNS: {
   wide: [number, number];
   tall: [number, number];
@@ -178,14 +180,14 @@ const YARNS: {
 }[] = [
   {
     wide: [3.5, 0.7],
-    tall: [1.9, 3.3],
+    tall: [1.9, 3.65],
     baseRot: 2.2,
     s: 1,
     tint: [0.93, 0.7, 0.34],
   },
   {
     wide: [-3.55, 1.0],
-    tall: [-2.05, 3.05],
+    tall: [-2.05, 3.6],
     baseRot: 5.1,
     s: 0.85,
     tint: [0.56, 0.66, 0.86],

@@ -8,6 +8,7 @@
     "userInterfaceStyle": "light",
     "backgroundColor": "#f9efdd",
     "ios": {
+      "icon": "./assets/logo.icon",
       "supportsTablet": true,
       "bundleIdentifier": "com.blazejkustra.purrkour",
       "infoPlist": {
