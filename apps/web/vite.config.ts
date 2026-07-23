@@ -21,6 +21,9 @@ function staticPages(pages: string[]): Plugin {
 }
 
 export default defineConfig({
+  // Relative base so the build works under a GitHub Pages project subpath
+  // (blazejkustra.github.io/purrkour/) as well as at a domain root.
+  base: "./",
   // Workspace-linked raw-TS source — never prebundle it past the typegpu plugin.
   optimizeDeps: { exclude: ["@purrkour/engine"] },
   plugins: [typegpu({}), staticPages(["privacy", "terms"])],
