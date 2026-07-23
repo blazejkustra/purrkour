@@ -1,6 +1,6 @@
 {
   "name": "@purrkour/mobile",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "main": "index.ts",
   "scripts": {
@@ -19,6 +19,7 @@
     "expo-keep-awake": "~57.0.1",
     "expo-splash-screen": "~57.0.4",
     "expo-system-ui": "~57.0.1",
+    "expo-tracking-transparency": "~57.0.1",
     "react": "19.2.3",
     "react-native": "0.86.0",
     "react-native-audio-api": "^0.13.1",

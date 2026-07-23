@@ -43,9 +43,10 @@ export default function App() {
           if (!disposed) setRoot(r);
         },
         (err) => {
-          console.error(
-            err instanceof Error ? (err.stack ?? err.message) : err,
-          );
+          if (__DEV__)
+            console.error(
+              err instanceof Error ? (err.stack ?? err.message) : err,
+            );
           if (!disposed)
             setInitError(err instanceof Error ? err.message : String(err));
         },

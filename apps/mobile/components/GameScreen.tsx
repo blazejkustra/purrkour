@@ -44,6 +44,7 @@ import { PText } from "./PText.tsx";
 import {
   IntroScreen,
   MenuScreen,
+  PrivacyScreen,
   Toast,
   TutorialScreen,
   WinScreen,
@@ -53,7 +54,10 @@ import {
 const progress = createProgress(storage);
 const logo = require("../assets/splash-icon.png");
 
-type Ui = "loading" | "menu" | "tutorial" | "intro" | "play";
+type Ui = "loading" | "menu" | "tutorial" | "intro" | "play" | "privacy";
+
+/** Settle time after the menu's entry transition before ads bootstrap. */
+const ADS_INIT_DELAY_MS = 1500;
 
 // Hermes provides performance.now(); the DOM-less lib config doesn't type it.
 declare const performance: { now(): number };
@@ -152,7 +156,6 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
   };
 
   useEffect(() => {
-    initAds();
     const sub = AppState.addEventListener("change", (s) => {
       foreground.current = s === "active";
     });
@@ -163,6 +166,19 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
       if (hintCdTimer.current) clearInterval(hintCdTimer.current);
     };
   }, []);
+
+  // Ads start late on purpose: gathering consent presents a native form and
+  // starting the SDK does heavy work on the main thread, which stutters (and
+  // on slower devices visibly freezes) the boot -> menu transition if it runs
+  // alongside it. Wait for the menu, then a settle beat that outlasts its
+  // entry transition. Hints stay free until an ad preloads, so nothing is
+  // blocked.
+  const booted = ui !== "loading";
+  useEffect(() => {
+    if (!booted) return;
+    const timer = setTimeout(initAds, ADS_INIT_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [booted]);
 
   // Boot once the surface has a layout (getBoundingClientRect is valid then).
   const onLayout = (event: {
@@ -241,22 +257,24 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
       // QA/debug bridge (mirrors the web build's window.__purrkour): lets
       // automation project a board cell to normalized viewport coords and
       // inspect live state via the Metro debugger instead of scraping pixels.
-      (globalThis as unknown as Record<string, unknown>).__purrkour = {
-        cellScreen: (cell: number, h = 0.3) =>
-          renderer.project(cellX(cell), h, cellZ(cell)),
-        worldScreen: (x: number, y: number, z: number) =>
-          renderer.project(x, y, z),
-        state: () => ({
-          cats: session.state.cats.map((c) => ({ ...c })),
-          dogs: session.state.dogs.map((dg) => ({ ...dg })),
-          moves: session.moves,
-          selected: session.selected,
-          won: session.won,
-          level: session.levelIndex,
-        }),
-        hint: () => session.hint,
-        particles: () => session.particleCount,
-      };
+      if (__DEV__) {
+        (globalThis as unknown as Record<string, unknown>).__purrkour = {
+          cellScreen: (cell: number, h = 0.3) =>
+            renderer.project(cellX(cell), h, cellZ(cell)),
+          worldScreen: (x: number, y: number, z: number) =>
+            renderer.project(x, y, z),
+          state: () => ({
+            cats: session.state.cats.map((c) => ({ ...c })),
+            dogs: session.state.dogs.map((dg) => ({ ...dg })),
+            moves: session.moves,
+            selected: session.selected,
+            won: session.won,
+            level: session.levelIndex,
+          }),
+          hint: () => session.hint,
+          particles: () => session.particleCount,
+        };
+      }
 
       let last = nowSec();
       const tick = () => {
@@ -278,7 +296,8 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
       if (progress.musicWanted) audio.startMusic();
       setUi("menu");
     } catch (err) {
-      console.error(err instanceof Error ? (err.stack ?? err.message) : err);
+      if (__DEV__)
+        console.error(err instanceof Error ? (err.stack ?? err.message) : err);
       setFatal(err instanceof Error ? err.message : String(err));
     }
   };
@@ -362,7 +381,11 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
   // up from behind it so the whole board reads; the strip revealed at the
   // bottom stays hidden under the sheet.
   const raised =
-    ui === "menu" || ui === "tutorial" || ui === "intro" || win !== null;
+    ui === "menu" ||
+    ui === "tutorial" ||
+    ui === "intro" ||
+    ui === "privacy" ||
+    win !== null;
   const roomShift = useAnimatedStyle(() => ({
     transform: [
       {
@@ -419,8 +442,10 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
           }}
           onHowTo={() => openTutorial(null)}
           onLevel={showIntro}
+          onPrivacy={() => setUi("privacy")}
         />
       )}
+      {ui === "privacy" && <PrivacyScreen onBack={toMenu} />}
       {ui === "tutorial" && (
         <TutorialScreen
           page={tutPage}

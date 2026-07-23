@@ -2,7 +2,7 @@
  * fed by the shared engine content/progress. The menu is a full-screen layout
  * over the live 3D room: title block up top, a paper level sheet docked below;
  * the modals ride the same sheet so the raised board stays visible above. */
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Image, ScrollView, StyleSheet, View } from "react-native";
 import Animated, {
   Easing,
@@ -21,6 +21,11 @@ import {
 import { TUTORIAL_PAGES } from "@purrkour/engine/game/tutorial.ts";
 import { colors } from "../src/theme.ts";
 import { tapHaptic } from "../src/sound.ts";
+import {
+  adPrivacyOptionsRequired,
+  adPrivacyOptionsRequiredSync,
+  showAdPrivacyOptions,
+} from "../src/ads.ts";
 import { BouncyPressable } from "./BouncyPressable.tsx";
 import { PText } from "./PText.tsx";
 import { Btn, IconFab } from "./ui.tsx";
@@ -63,6 +68,7 @@ export function MenuScreen({
   onHowTo,
   onLevel,
   onMusic,
+  onPrivacy,
 }: {
   progress: Progress;
   musicOn: boolean;
@@ -70,6 +76,7 @@ export function MenuScreen({
   onHowTo: () => void;
   onLevel: (i: number) => void;
   onMusic: () => void;
+  onPrivacy: () => void;
 }) {
   const insets = useSafeAreaInsets();
   return (
@@ -97,6 +104,18 @@ export function MenuScreen({
           style={styles.playBtn}
         />
         <Btn label="How to play" small onPress={onHowTo} />
+        <BouncyPressable
+          accessibilityRole="button"
+          onPress={() => {
+            tapHaptic();
+            onPrivacy();
+          }}
+          style={styles.privacyLink}
+        >
+          <PText weight="semiBold" style={styles.privacyLinkText}>
+            Privacy Policy
+          </PText>
+        </BouncyPressable>
       </Animated.View>
 
       {/* music toggle rides the top-left corner, out of the hero's stack */}
@@ -295,6 +314,75 @@ export function IntroScreen({
   );
 }
 
+/** Mirrors the web policy page — the game itself stores nothing off-device;
+ * only the optional AdMob rewarded ad touches third-party services. */
+const PRIVACY_PARAGRAPHS = [
+  "Purrkour doesn't collect, store, or share any personal data. There are no accounts and no analytics.",
+  "When you ask for a hint, an optional rewarded ad can be shown by Google AdMob, which may process device identifiers, IP address, and ad-interaction data to serve and measure ads. Where required, the app asks for your consent first (on iOS, including tracking permission) — if you decline, only non-personalized ads are requested.",
+  "Your game progress and settings are saved only on this device, and are deleted when you delete the app.",
+  "Questions about this policy? Email kustrablazej@gmail.com.",
+];
+
+export function PrivacyScreen({ onBack }: { onBack: () => void }) {
+  // GDPR consent regions get a way back into the UMP form to change their
+  // mind; elsewhere the link stays hidden. Seeded from the sync cache so the
+  // sheet mounts at its final size — growing it right after mount collides
+  // with the entering animation and the content overflows the bottom padding.
+  const [adOptions, setAdOptions] = useState(adPrivacyOptionsRequiredSync);
+  useEffect(() => {
+    let disposed = false;
+    adPrivacyOptionsRequired().then((required) => {
+      if (!disposed) setAdOptions(required);
+    });
+    return () => {
+      disposed = true;
+    };
+  }, []);
+  return (
+    <SheetModal>
+      <PText weight="extraBold" style={styles.kicker}>
+        PURRKOUR
+      </PText>
+      <PText weight="extraBold" style={styles.cardTitle}>
+        Privacy Policy
+      </PText>
+      <ScrollView
+        style={styles.privacyScroll}
+        contentContainerStyle={styles.privacyBody}
+      >
+        {PRIVACY_PARAGRAPHS.map((paragraph, i) => (
+          <PText key={i} weight="medium" style={styles.privacyText}>
+            {paragraph}
+          </PText>
+        ))}
+      </ScrollView>
+      {adOptions && (
+        <BouncyPressable
+          accessibilityRole="button"
+          scaleTo={0.94}
+          onPress={() => {
+            tapHaptic();
+            showAdPrivacyOptions();
+          }}
+          style={styles.adPrefs}
+        >
+          <PText weight="bold" style={styles.adPrefsText}>
+            Ad preferences
+          </PText>
+        </BouncyPressable>
+      )}
+      <View style={styles.cardButtons}>
+        <Btn
+          label="Back"
+          variant="accent"
+          onPress={onBack}
+          style={styles.btnFlexWide}
+        />
+      </View>
+    </SheetModal>
+  );
+}
+
 export interface WinInfo {
   title: string;
   stars: number;
@@ -423,6 +511,39 @@ const styles = StyleSheet.create({
     minWidth: 224,
     marginTop: 18,
     marginBottom: 12,
+  },
+  /* quiet text link — present but not competing with the hero buttons */
+  privacyLink: { marginTop: 10, paddingVertical: 4, paddingHorizontal: 12 },
+  privacyLinkText: {
+    fontSize: 13,
+    letterSpacing: 1,
+    lineHeight: 18,
+    color: colors.inkSoft,
+  },
+  /* flexShrink (RN defaults it to 0) lets the policy give up height once the
+   * sheet hits its maxHeight — without it the text keeps its full length and
+   * shoves the link and Back button off the bottom of the screen. */
+  privacyScroll: {
+    alignSelf: "stretch",
+    flexGrow: 0,
+    flexShrink: 1,
+    marginTop: 4,
+  },
+  privacyBody: { paddingHorizontal: 4, paddingBottom: 4 },
+  privacyText: {
+    marginTop: 10,
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.inkSoft,
+  },
+  /* consent re-entry reads as a footnote to the policy, not a second action
+   * competing with Back — the label is too long for a half-width button */
+  adPrefs: { marginTop: 14, paddingVertical: 4, paddingHorizontal: 8 },
+  adPrefsText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.clay,
+    textDecorationLine: "underline",
   },
   sheet: {
     position: "absolute",
