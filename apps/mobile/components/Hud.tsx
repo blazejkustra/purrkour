@@ -7,16 +7,59 @@
  */
 import React from "react";
 import { StyleSheet, View } from "react-native";
+import Animated, {
+  useAnimatedProps,
+  type SharedValue,
+} from "react-native-reanimated";
+import Svg, { Path } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LEVELS } from "@purrkour/engine/game/levels.ts";
 import { colors } from "../src/theme.ts";
+import { openAdInspector } from "../src/ads.ts";
 import { PText } from "./PText.tsx";
 import { IconFab } from "./ui.tsx";
 import { HintIcon, HomeIcon, ResetIcon, UndoIcon } from "./icons.tsx";
 
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+
+/** The web bulb's recharge sweep: a dark pie over the fab whose angle is the
+ * remaining cooldown fraction, draining clockwise from 12 o'clock. */
+function CooldownSweep({
+  size,
+  progress,
+}: {
+  size: number;
+  progress: SharedValue<number>;
+}) {
+  const r = size / 2;
+  const animatedProps = useAnimatedProps(() => {
+    const frac = Math.min(0.9999, Math.max(0, progress.value));
+    const angle = frac * 2 * Math.PI;
+    const x = r + r * Math.sin(angle);
+    const y = r - r * Math.cos(angle);
+    const large = angle > Math.PI ? 1 : 0;
+    return { d: `M ${r} ${r} L ${r} 0 A ${r} ${r} 0 ${large} 1 ${x} ${y} Z` };
+  });
+  return (
+    <Svg
+      width={size}
+      height={size}
+      style={StyleSheet.absoluteFill}
+      pointerEvents="none"
+    >
+      <AnimatedPath
+        animatedProps={animatedProps}
+        fill="rgba(43, 32, 22, 0.45)"
+      />
+    </Svg>
+  );
+}
+
 export function Hud({
   levelIndex,
   moves,
+  hintCooldown,
+  hintCdProgress,
   onMenu,
   onUndo,
   onReset,
@@ -24,6 +67,10 @@ export function Hud({
 }: {
   levelIndex: number;
   moves: number;
+  /** Seconds until the hint bulb is ready again (0 = ready). */
+  hintCooldown: number;
+  /** Remaining cooldown as 1 → 0 — drives the recharge sweep. */
+  hintCdProgress: SharedValue<number>;
   onMenu: () => void;
   onUndo: () => void;
   onReset: () => void;
@@ -66,8 +113,21 @@ export function Hud({
       <View
         style={[styles.bottomRight, { bottom, right: side + insets.right }]}
       >
-        <IconFab size={68} variant="clay" label="Show hint" onPress={onHint}>
+        <IconFab
+          size={68}
+          variant="clay"
+          label={hintCooldown > 0 ? "Hint recharging" : "Show hint"}
+          disabled={hintCooldown > 0}
+          style={hintCooldown > 0 && styles.hintCooling}
+          onPress={onHint}
+          // dev tool: long-press opens Google's Ad Inspector to see why an
+          // ad request filled or failed on this exact device
+          onLongPress={__DEV__ ? openAdInspector : undefined}
+        >
           <HintIcon size={34} color="#fff6ea" />
+          {hintCooldown > 0 && (
+            <CooldownSweep size={68} progress={hintCdProgress} />
+          )}
         </IconFab>
       </View>
     </View>
@@ -130,4 +190,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   bottomRight: { position: "absolute" },
+  /* recharging bulb: pressed clay under the draining sweep */
+  hintCooling: {
+    backgroundColor: colors.clayPressed,
+    shadowOpacity: 0,
+  },
 });

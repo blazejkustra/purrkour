@@ -255,6 +255,7 @@ const session = createSession(renderer, {
     toast(
       `Try the glowing ${what} — ${minMoves} move${minMoves > 1 ? "s" : ""} to go!`,
     );
+    startHintCooldown();
   },
   onHintUnavailable() {
     toast("No way to win from here — undo or reset!");
@@ -297,6 +298,31 @@ function doUndo() {
 
 el("undo").addEventListener("click", doUndo);
 el("reset").addEventListener("click", () => loadLevel(session.levelIndex));
+// The bulb recharges after each shown hint, so it can't be chain-clicked
+// through a whole solution.
+const HINT_COOLDOWN_S = 20;
+let hintTimer: ReturnType<typeof setInterval> | null = null;
+
+function startHintCooldown() {
+  const btn = el("hint") as HTMLButtonElement;
+  const readyAt = nowSec() + HINT_COOLDOWN_S;
+  btn.disabled = true;
+  btn.classList.add("cooling");
+  if (hintTimer) clearInterval(hintTimer);
+  hintTimer = setInterval(() => {
+    const left = readyAt - nowSec();
+    if (left <= 0) {
+      if (hintTimer) clearInterval(hintTimer);
+      hintTimer = null;
+      btn.disabled = false;
+      btn.classList.remove("cooling");
+      btn.style.removeProperty("--cd");
+    } else {
+      btn.style.setProperty("--cd", `${(left / HINT_COOLDOWN_S) * 100}%`);
+    }
+  }, 100);
+}
+
 el("hint").addEventListener("click", () => session.showHint(nowSec()));
 el("music").addEventListener("click", () => {
   audio.unlock();

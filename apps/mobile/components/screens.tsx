@@ -54,7 +54,7 @@ export function MenuScreen({
       />
       <Animated.View
         entering={FadeIn.duration(300)}
-        style={[styles.menuTop, { paddingTop: insets.top + 18 }]}
+        style={[styles.menuTop, { paddingTop: insets.top }]}
         pointerEvents="box-none"
       >
         <Image source={logo} style={styles.logo} />
@@ -363,9 +363,15 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: "rgba(249, 240, 225, 0.78)",
   },
+  /* hero centers in the zone above the level sheet (~44% tall), like web */
   menuTop: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: "44%",
     alignItems: "center",
+    justifyContent: "center",
   },
   musicSlot: { position: "absolute" },
   logo: { width: 92, height: 92, marginBottom: 2 },

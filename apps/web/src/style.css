@@ -171,11 +171,11 @@ body::after {
     background 0.12s ease,
     box-shadow 0.12s ease;
 }
-.fab:hover {
+.fab:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 9px 20px rgba(51, 48, 43, 0.26);
 }
-.fab:active {
+.fab:active:not(:disabled) {
   transform: scale(0.92);
   box-shadow: 0 4px 10px rgba(51, 48, 43, 0.2);
 }
@@ -288,6 +288,22 @@ body::after {
   position: fixed;
   bottom: calc(20px + env(safe-area-inset-bottom));
   right: calc(16px + env(safe-area-inset-right));
+  overflow: hidden;
+}
+/* recharging bulb: a dark sweep (--cd = remaining %) drains clockwise */
+#hint.cooling {
+  cursor: default;
+  background: var(--clay-pressed);
+}
+#hint.cooling::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    rgba(43, 32, 22, 0.45) var(--cd, 100%),
+    transparent 0
+  );
 }
 
 /* --- buttons ------------------------------------------------------------------- */

@@ -79,30 +79,39 @@ export function IconFab({
   size = 56,
   variant = "paper",
   label,
+  disabled = false,
+  style,
   onPress,
+  onLongPress,
   children,
 }: {
   size?: number;
   variant?: "paper" | "walnut" | "clay";
   label: string;
+  disabled?: boolean;
+  style?: StyleProp<ViewStyle>;
   onPress: () => void;
+  onLongPress?: () => void;
   children: ReactNode;
 }) {
   return (
     <BouncyPressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      disabled={disabled}
       scaleTo={0.92}
       onPress={() => {
         tapHaptic();
         onPress();
       }}
+      onLongPress={onLongPress}
       style={[
         styles.fab,
         { width: size, height: size, borderRadius: size / 2 },
         variant === "paper" && styles.fabPaper,
         variant === "walnut" && styles.fabWalnut,
         variant === "clay" && styles.fabClay,
+        style,
       ]}
     >
       {children}

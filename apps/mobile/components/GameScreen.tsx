@@ -16,6 +16,7 @@ import {
 import Animated, {
   Easing,
   useAnimatedStyle,
+  useSharedValue,
   withTiming,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
@@ -35,6 +36,7 @@ import {
 import { createProgress, starsFor } from "@purrkour/engine/game/progress.ts";
 import { LEVELS } from "@purrkour/engine/game/levels.ts";
 import { storage } from "../src/storage.ts";
+import { initAds, requestHintAd } from "../src/ads.ts";
 import { audio, playSfx } from "../src/sound.ts";
 import { colors } from "../src/theme.ts";
 import { Hud } from "./Hud.tsx";
@@ -116,6 +118,33 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Hints granted without an ad (offline / no fill) recharge like the web's
+  // bulb, so the free fallback can't be chain-clicked.
+  const HINT_COOLDOWN_S = 20;
+  const [hintCd, setHintCd] = useState(0);
+  /** 1 → 0 over the cooldown — drives the bulb's recharge sweep. */
+  const hintCdProgress = useSharedValue(0);
+  const hintCdTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hintViaAd = useRef(false);
+  const startHintCooldown = () => {
+    setHintCd(HINT_COOLDOWN_S);
+    hintCdProgress.value = 1;
+    hintCdProgress.value = withTiming(0, {
+      duration: HINT_COOLDOWN_S * 1000,
+      easing: Easing.linear,
+    });
+    if (hintCdTimer.current) clearInterval(hintCdTimer.current);
+    hintCdTimer.current = setInterval(() => {
+      setHintCd((s) => {
+        if (s <= 1 && hintCdTimer.current) {
+          clearInterval(hintCdTimer.current);
+          hintCdTimer.current = null;
+        }
+        return Math.max(0, s - 1);
+      });
+    }, 1000);
+  };
+
   const showToast = (msg: string, ms = 2600) => {
     setToastMsg(msg);
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -123,6 +152,7 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
   };
 
   useEffect(() => {
+    initAds();
     const sub = AppState.addEventListener("change", (s) => {
       foreground.current = s === "active";
     });
@@ -130,6 +160,7 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
       sub.remove();
       cancelAnimationFrame(rafRef.current);
       if (toastTimer.current) clearTimeout(toastTimer.current);
+      if (hintCdTimer.current) clearInterval(hintCdTimer.current);
     };
   }, []);
 
@@ -198,6 +229,7 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
           showToast(
             `Try the glowing ${kind} — ${minMoves} move${minMoves > 1 ? "s" : ""} to go!`,
           );
+          if (!hintViaAd.current) startHintCooldown();
         },
         onHintUnavailable() {
           showToast("No way to win from here — undo or reset!");
@@ -359,7 +391,14 @@ export function GameScreen({ root }: { root: TgpuRoot }) {
           onMenu={toMenu}
           onUndo={doUndo}
           onReset={() => session().reset()}
-          onHint={() => session().showHint(nowSec())}
+          hintCooldown={hintCd}
+          hintCdProgress={hintCdProgress}
+          onHint={() =>
+            requestHintAd((viaAd) => {
+              hintViaAd.current = viaAd;
+              session().showHint(nowSec());
+            })
+          }
         />
       )}
 
