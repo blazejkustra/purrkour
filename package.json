@@ -2,6 +2,7 @@
   "name": "purrkour-monorepo",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "types": "pnpm -r run types",
